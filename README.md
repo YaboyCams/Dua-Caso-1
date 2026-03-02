@@ -20,8 +20,8 @@ Este repositorio contiene el **diseño** del sistema (arquitectura, modelos de d
 No incluye implementación funcional en esta etapa.
 
 ## Autores
-- <Camilo Allon Quesada>
-- <Nombre(s) de tu equipo, si aplica>
+- Camilo Allon Quesada
+- José Pablo Chavarro Conde
 
 ## Referencias iniciales
 - Qué es DUA: https://alianza-logistics.com/documento-unico-aduanero-2/
