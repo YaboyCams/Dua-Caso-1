@@ -67,7 +67,7 @@ A folder within `/src` containing the project scaffold, generated based on the c
 ## Authors
 
 * Camilo Allon Quesada
-* José Pablo Chavarro Conde
+* Jose Pablo Chavarro Conde
 
 ## Initial References
 
