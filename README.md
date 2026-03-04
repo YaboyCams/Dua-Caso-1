@@ -1,29 +1,36 @@
-# DUA Streamliner — Sistema Inteligente para la Generación Automatizada del DUA
+# DUA Streamliner — Intelligent System for Automated DUA Generation
 
-## Problema
-El Documento Único Aduanero (DUA) requiere completar múltiples campos basados en documentos heterogéneos (facturas, listas de empaque, certificados, conocimientos de embarque, pólizas, permisos, etc.).  
-Hoy, este proceso suele hacerse manualmente, es repetitivo, propenso a errores y depende del conocimiento experto, lo que puede causar retrasos, multas o rechazos.
+## Problem
 
-## Objetivo del proyecto
-Diseñar una solución que, a partir de una carpeta con documentos (Excel, Word, PDF e imágenes escaneadas), sea capaz de:
-1. Leer y extraer contenido multiformato (incluyendo OCR para escaneos).
-2. Identificar semánticamente datos aduaneros relevantes.
-3. Mapear automáticamente los datos a las casillas oficiales del DUA.
-4. Aplicar validaciones básicas de coherencia y marcar ambigüedades.
-5. Generar un Word (.docx) del DUA prellenado con códigos de confianza:
-   - Verde: alta confianza
-   - Amarillo: confianza media
-   - Rojo: requiere revisión
+The Single Customs Document (DUA) requires filling in multiple fields based on heterogeneous documents (invoices, packing lists, certificates, bills of lading, insurance policies, permits, etc.).
+Today, this process is usually done manually; it is repetitive, error-prone, and heavily dependent on expert knowledge, which can lead to delays, fines, or rejections.
 
-## Alcance (por ahora)
-Este repositorio contiene el **diseño** del sistema (arquitectura, modelos de datos, UX/UI, calidad, deployment/CI-CD, seguridad, observability, etc.).  
-No incluye implementación funcional en esta etapa.
+## Project Objective
 
-## Autores
-- Camilo Allon Quesada
-- José Pablo Chavarro Conde
+Design a solution that, given a folder containing documents (Excel, Word, PDF, and scanned images), is able to:
 
-## Referencias iniciales
-- Qué es DUA: https://alianza-logistics.com/documento-unico-aduanero-2/
-- Template oficial (CR): https://www.hacienda.go.cr/docs/Mensaje_TD_DUA-V3-17-12-03-2025.pdf
-- Cómo llenar el DUA (guía general): https://gestionesenlinea.es/formulario-dua-documento-unico-administrativo/
+1. Read and extract content from multiple formats (including OCR for scanned files).
+2. Semantically identify relevant customs data.
+3. Automatically map the data to the official DUA fields.
+4. Apply basic consistency validations and flag ambiguities.
+5. Generate a pre-filled DUA Word file (.docx) with confidence indicators:
+
+   * Green: high confidence
+   * Yellow: medium confidence
+   * Red: requires review
+
+## Scope (for now)
+
+This repository contains the **design** of the system (architecture, data models, UX/UI, quality, deployment/CI-CD, security, observability, etc.).
+It does not include a functional implementation at this stage.
+
+## Authors
+
+* Camilo Allon Quesada
+* José Pablo Chavarro Conde
+
+## Initial References
+
+* What is the DUA: [https://alianza-logistics.com/documento-unico-aduanero-2/](https://alianza-logistics.com/documento-unico-aduanero-2/)
+* Official template (CR): [https://www.hacienda.go.cr/docs/Mensaje_TD_DUA-V3-17-12-03-2025.pdf](https://www.hacienda.go.cr/docs/Mensaje_TD_DUA-V3-17-12-03-2025.pdf)
+* How to fill out the DUA (general guide): [https://gestionesenlinea.es/formulario-dua-documento-unico-administrativo/](https://gestionesenlinea.es/formulario-dua-documento-unico-administrativo/)
