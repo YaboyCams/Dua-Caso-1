@@ -54,7 +54,7 @@ It does not include a functional implementation at this stage.
 
 ---
 
-## 1.2 UX / UI Analysis**
+## **1.2 UX / UI Analysis**
 
 
 ## Core Business Process
