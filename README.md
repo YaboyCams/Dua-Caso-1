@@ -212,19 +212,19 @@ The user reviews the generated DUA document and verifies the extracted informati
 
 
 ----------------------------------------------------------------------
-## 1.3 Component Design Strategy**
+## **1.3 Component Design Strategy**
 Defines the techniques and principles for frontend component design, how component reusability is achieved, how styles are centralized, as well as branding, internationalization (i18n), and responsiveness strategies.
 
-## 1.4 Security**
+## **1.4 Security**
 Technologies, techniques, and classes—along with their respective locations within the project structure—responsible for authentication, authorization, permission management, and session handling.
 
-## 1.5 Layered Design**
+## **1.5 Layered Design**
 Design and explanation of the different layers of the frontend application.
 
-## 1.6 Design Patterns**
+## **1.6 Design Patterns**
 Class design with their respective locations in the project structure, where object-oriented design patterns are applied when necessary, such as for security, UI refresh, notification handling, state storage, API calls, asynchronous operations, session invalidation, event-driven programming, and object creation.
 
-## 1.7 Project Scaffold**
+## **1.7 Project Scaffold**
 A folder within `/src` containing the project scaffold, generated based on the complete specification defined in sections **1.1** through **1.6**.
 
 ## Authors
