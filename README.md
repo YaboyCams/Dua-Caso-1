@@ -181,6 +181,13 @@ The user reviews the generated DUA document and verifies the extracted informati
 | Processing Monitoring | 4.9s | 100% | 0% | 0% | 3 | 10 |
 | Generated DUA Result | 11.0s | 100% | 0% | 81.3% | 3 | 9 |
 
+## Heatmaps for misclicks and drop-offs:
+
+
+## Entrevistados 
+
+   - Felipe Bianchi Piedra // Abogado
+
 
 ----------------------------------------------------------------------
 ## 1.3 Component Design Strategy**
