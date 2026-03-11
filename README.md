@@ -183,10 +183,32 @@ The user reviews the generated DUA document and verifies the extracted informati
 
 ## Heatmaps for misclicks and drop-offs:
 
+### Login Screen
+<img width="1054" height="561" alt="image" src="https://github.com/user-attachments/assets/f9fbc9da-3d1c-409e-94d3-89e6ba9a6e44" />
+
+### Folder Selection (Provide Path)
+<img width="1068" height="580" alt="image" src="https://github.com/user-attachments/assets/9e4e8d35-c6e4-47f3-bd9c-fa40d8ae1ada" />
+
+### Folder Selection (Scan & Detect Files)
+<img width="886" height="567" alt="image" src="https://github.com/user-attachments/assets/06e31b75-fecd-4508-8332-61684484faea" />
+
+### Folder Selection (Confirm Folder)
+<img width="1112" height="614" alt="image" src="https://github.com/user-attachments/assets/fcca9534-5564-4398-9159-afe625ae45be" />
+
+### DUA Template Selection
+<img width="1117" height="620" alt="image" src="https://github.com/user-attachments/assets/4ff3dcd5-5d9d-40e0-a4f5-546a045698ae" />
+
+### Processing Monitoring
+<img width="1114" height="618" alt="image" src="https://github.com/user-attachments/assets/5003cd4a-0df2-4476-b7c0-2ec70d11e7e2" />
+
+### Generated DUA Result
+<img width="1107" height="612" alt="image" src="https://github.com/user-attachments/assets/dcfe437a-8b18-442e-8902-81559801fbb6" />
 
 ## Entrevistados 
 
-   - Felipe Bianchi Piedra // Abogado
+   - Felipe Bianchi Piedra // Lawyer
+   - Ana María Chavarro Conde // Performance Analyst
+   - Francisco Javier Chavarro Conde // Developer
 
 
 ----------------------------------------------------------------------
