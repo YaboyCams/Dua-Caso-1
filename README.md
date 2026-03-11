@@ -168,6 +168,21 @@ The user reviews the generated DUA document and verifies the extracted informati
 
 ---
 
+----------------------------------------------------------------------
+## Testing Results
+
+| Screen | Avg Duration | Success Rate | Drop-off Rate | Misclick Rate | Responses | Ease of Task (Avg) |
+|------|------|------|------|------|------|------|
+| Login Screen | 14.6s | 100% | 0% | 66.7% | 3 | 8.3 |
+| Folder Selection (Provide Path) | 4.8s | 100% | 0% | 50.0% | 3 | 9 |
+| Folder Selection (Scan & Detect Files) | 3.0s | 100% | 0% | 40.0% | 3 | 9 |
+| Folder Selection (Confirm Folder) | 5.7s | 100% | 0% | 36.4% | 3 | 9 |
+| DUA Template Selection | 5.4s | 100% | 0% | 62.5% | 3 | 9.3 |
+| Processing Monitoring | 4.9s | 100% | 0% | 0% | 3 | 10 |
+| Generated DUA Result | 11.0s | 100% | 0% | 81.3% | 3 | 9 |
+
+
+----------------------------------------------------------------------
 ## 1.3 Component Design Strategy**
 Defines the techniques and principles for frontend component design, how component reusability is achieved, how styles are centralized, as well as branding, internationalization (i18n), and responsiveness strategies.
 
