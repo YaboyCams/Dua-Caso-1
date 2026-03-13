@@ -217,7 +217,183 @@ Defines the techniques and principles for frontend component design, how compone
 
 ## **1.4 Security**
 Technologies, techniques, and classes—along with their respective locations within the project structure—responsible for authentication, authorization, permission management, and session handling.
+## Multi-Factor Authentication (MFA)
+MFA supported: Yes
 
+Supported MFA methods:
+- Microsoft Authenticator App
+-Time-based OTP (TOTP)
+-SMS One-Time Password
+-Voice Call OTP
+
+## Single Sign-On (SSO)
+
+SSO supported: Yes
+Users authenticate using their Microsoft Entra organizational accounts, allowing centralized identity management and security policy enforcement.
+
+# Social Authentication
+
+| Provider | Supported |
+|---|---|
+| Google Authentication | No |
+| Facebook Authentication | No |
+
+**Reason**
+
+The system processes sensitive operational documents.  
+Authentication is restricted to **corporate identity providers** to ensure governance, traceability, and security compliance.
+
+
+## RBAC Roles
+
+| Role Name | Description |
+|---|---|
+| `SYS_ADMIN` | Full system administrator with access to security, configuration, roles, permissions, and observability features. |
+| `CUSTOMS_SPECIALIST` | Main operational user responsible for configuring the generation process, starting processing, reviewing extracted data, and exporting the generated DUA. |
+| `CUSTOMS_REVIEWER` | Business reviewer responsible for validating extracted information, correcting ambiguous fields, and approving generated DUA documents. |
+| `AUDITOR` | Read-only user responsible for auditing, traceability, and historical review of system activity and generated DUA processes. |
+| `SUPPORT_OPERATOR` | Technical support user with access to monitoring and diagnostics, but without permission to approve or export sensitive business documents. |
+
+---
+
+## Permissions by Role
+
+### `SYS_ADMIN`
+
+| Permission Code | Description |
+|---|---|
+| `AUTH_LOGIN` | Login to the system |
+| `AUTH_LOGOUT` | Logout from the system |
+| `DASHBOARD_VIEW` | View the main dashboard |
+| `FOLDER_SELECT` | Select the source document folder |
+| `DOCUMENT_SCAN_START` | Start document scanning |
+| `DOCUMENT_LIST_VIEW` | View detected documents |
+| `DUA_TEMPLATE_SELECT` | Select the official DUA template |
+| `PROCESS_START` | Start the automated generation process |
+| `PROCESS_MONITOR` | Monitor processing progress |
+| `PROCESS_CANCEL` | Cancel an active process |
+| `DUA_RESULT_VIEW` | View the generated DUA |
+| `DUA_RESULT_EDIT` | Edit extracted DUA fields |
+| `DUA_RESULT_APPROVE` | Approve the generated DUA |
+| `DUA_RESULT_EXPORT` | Export the final DUA document |
+| `HISTORY_VIEW` | View processing history |
+| `AUDIT_LOG_VIEW` | View audit logs |
+| `USER_ADMIN` | Manage users |
+| `ROLE_ADMIN` | Manage roles and permissions |
+| `SYSTEM_CONFIG` | Manage system configuration |
+| `OBSERVABILITY_VIEW` | View monitoring and observability data |
+
+### `CUSTOMS_SPECIALIST`
+
+| Permission Code | Description |
+|---|---|
+| `AUTH_LOGIN` | Login to the system |
+| `AUTH_LOGOUT` | Logout from the system |
+| `DASHBOARD_VIEW` | View the main dashboard |
+| `FOLDER_SELECT` | Select the source document folder |
+| `DOCUMENT_SCAN_START` | Start document scanning |
+| `DOCUMENT_LIST_VIEW` | View detected documents |
+| `DUA_TEMPLATE_SELECT` | Select the official DUA template |
+| `PROCESS_START` | Start the automated generation process |
+| `PROCESS_MONITOR` | Monitor processing progress |
+| `DUA_RESULT_VIEW` | View the generated DUA |
+| `DUA_RESULT_EDIT` | Edit extracted DUA fields |
+| `DUA_RESULT_EXPORT` | Export the final DUA document |
+| `HISTORY_VIEW` | View processing history |
+
+### `CUSTOMS_REVIEWER`
+
+| Permission Code | Description |
+|---|---|
+| `AUTH_LOGIN` | Login to the system |
+| `AUTH_LOGOUT` | Logout from the system |
+| `DASHBOARD_VIEW` | View the main dashboard |
+| `DOCUMENT_LIST_VIEW` | View detected documents |
+| `PROCESS_MONITOR` | Monitor processing progress |
+| `DUA_RESULT_VIEW` | View the generated DUA |
+| `DUA_RESULT_EDIT` | Edit extracted DUA fields |
+| `DUA_RESULT_APPROVE` | Approve the generated DUA |
+| `DUA_RESULT_EXPORT` | Export the final DUA document |
+| `HISTORY_VIEW` | View processing history |
+| `AUDIT_LOG_VIEW` | View audit logs |
+
+### `AUDITOR`
+
+| Permission Code | Description |
+|---|---|
+| `AUTH_LOGIN` | Login to the system |
+| `AUTH_LOGOUT` | Logout from the system |
+| `DASHBOARD_VIEW` | View the main dashboard |
+| `DOCUMENT_LIST_VIEW` | View detected documents |
+| `PROCESS_MONITOR` | Monitor processing progress |
+| `DUA_RESULT_VIEW` | View the generated DUA |
+| `HISTORY_VIEW` | View processing history |
+| `AUDIT_LOG_VIEW` | View audit logs |
+
+### `SUPPORT_OPERATOR`
+
+| Permission Code | Description |
+|---|---|
+| `AUTH_LOGIN` | Login to the system |
+| `AUTH_LOGOUT` | Logout from the system |
+| `DASHBOARD_VIEW` | View the main dashboard |
+| `PROCESS_MONITOR` | Monitor processing progress |
+| `HISTORY_VIEW` | View processing history |
+| `OBSERVABILITY_VIEW` | View monitoring and observability data |
+
+---
+
+## ACL
+
+**ACL supported:** Yes
+
+**ACL service name:** `ACLService`
+
+**Purpose of ACL:**
+- Restrict access to specific DUA processes or generated documents
+- Allow only the owner or assigned reviewer to modify a record
+- Enforce read-only access for auditors
+- Prevent support users from accessing sensitive export actions
+
+---
+
+## PBAC Policies
+
+**PBAC supported:** Yes
+
+**Policy service name:** `PolicyService`
+
+| Policy Code | Policy Name | Definition |
+|---|---|---|
+| `POL-001` | `ExportOnlyWhenReviewed` | A DUA can only be exported after the process is completed and the document has been reviewed or approved by an authorized role. |
+| `POL-002` | `EditOnlyBeforeApproval` | DUA fields can only be edited before the document is approved. |
+| `POL-003` | `OwnerOrReviewerAccess` | Only the process owner, an assigned reviewer, or a system administrator can edit a DUA process. |
+| `POL-004` | `AuditReadOnly` | Users with the `AUDITOR` role have read-only access to documents, history, and audit records. |
+| `POL-005` | `SupportNoSensitiveExport` | Support users cannot approve, export, or modify business-sensitive DUA content. |
+
+---
+
+## Secure Store
+
+**Secure store service:** `Azure Key Vault`
+
+**Used for storing:**
+- Environment variables
+- API keys
+- OAuth client secrets
+- Database credentials
+- Encryption keys
+- Other sensitive application configuration
+
+---
+
+## Authenticator Server Name
+
+**Authenticator server name:** `Microsoft Entra ID`
+
+
+MFA management:
+Handled by Microsoft Entra ID security policies.
 ## **1.5 Layered Design**
 Design and explanation of the different layers of the frontend application.
 
