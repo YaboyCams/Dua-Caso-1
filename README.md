@@ -213,7 +213,24 @@ The user reviews the generated DUA document and verifies the extracted informati
 
 ----------------------------------------------------------------------
 ## **1.3 Component Design Strategy**
-Defines the techniques and principles for frontend component design, how component reusability is achieved, how styles are centralized, as well as branding, internationalization (i18n), and responsiveness strategies.
+
+### Component Design Strategy
+
+**Name of the strategy:**
+Atomic Design
+
+**Reutilization by:**
+Components are organized hierarchically as **atoms, molecules, organisms, templates, and pages**.
+Basic elements are created once and reused across the application to ensure consistency and reduce duplication.
+
+**Internationalization by:**
+Internationalization is implemented using **i18next**, with centralized translation files.
+Components reference translation keys instead of hardcoded text.
+
+**Responsiveness by:**
+Responsiveness is implemented using **TailwindCSS responsive utilities**, allowing layouts to adapt to different screen sizes such as desktop, tablet, and mobile devices.
+
+
 
 ## **1.4 Security**
 Technologies, techniques, and classes—along with their respective locations within the project structure—responsible for authentication, authorization, permission management, and session handling.
