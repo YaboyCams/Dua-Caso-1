@@ -510,7 +510,21 @@ Azure DevOps Repo → Pipelines → Dev / Stage / Prod → Azure App Service
 ---
 
 ## **1.6 Design Patterns**
-Class design with their respective locations in the project structure, where object-oriented design patterns are applied when necessary, such as for security, UI refresh, notification handling, state storage, API calls, asynchronous operations, session invalidation, event-driven programming, and object creation.
+
+Use **Builder Pattern** and **Strategy Pattern** to create different document processors for formats such as **.docx, .xlsx, .pdf, .jpg, .png**.
+
+**NotificationService** subscriptions are implemented using the **Observer Pattern**.
+
+Use the **Adapter Pattern** to map extracted data into the **DUA Word template**, using **FormatAdapters** and concrete formats such as: **Paragraph, Table, Label, Amount**.
+
+Use **Singleton Pattern** for shared services:
+
+* ExceptionHandling
+* Utils
+* StateManagement (Redux)
+* ApiClients
+* Settings classes
+
 
 ## **1.7 Project Scaffold**
 A folder within `/src` containing the project scaffold, generated based on the complete specification defined in sections **1.1** through **1.6**.
