@@ -34,22 +34,25 @@ It does not include a functional implementation at this stage.
 
 ## 1.1 Technology stack
 
+### Technology Stack
+
 * **Application type:** Server-side rendering (SSR) web application
 * **Web framework:** React.js `19.2`
 * **Web server:** Node.js `21`
 * **Coding language:** TypeScript `5.9.3`
+* **State management:** Redux `5.0.1`
 * **Unit testing framework:** Jest `30.2.0`
-* **Data validation framework:** Zod `4.3.6`
-* **Code prettier framework:** Prettier `3.8.1`
-* **Code style framework:** ESLint `10.0.2`
 * **Integration testing tools:** Playwright `1.58.2`
+* **Data validation framework:** Zod `4.3.6`
+* **Code formatting framework:** Prettier `3.8.1`
+* **Code style framework:** ESLint `10.0.2`
+* **Code automation tasks:** Husky `9.1.7`
 * **Cloud service:** Azure Cloud Services
-* **Hosted services within the cloud service:** Azure App Service
-* **Code repositories service:** Azure DevOps Repos
-* **Code automation task tool:** Husky `9.1.7`
+* **Hosted services within the cloud:** Azure App Service
+* **Code repository service:** Azure DevOps Repos
 * **CI/CD pipelines technology:** Azure DevOps Pipelines
 * **Environments:** Development, Stage, Production
-* **Environment deployments tools:** Azure DevOps Environments
+* **Environment deployment tools:** Azure DevOps Environments
 * **Observability framework:** Azure Application Insights SDK
 
 ---
