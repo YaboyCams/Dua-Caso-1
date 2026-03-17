@@ -207,11 +207,13 @@ The user reviews the generated DUA document and verifies the extracted informati
 ### Generated DUA Result
 <img width="1107" height="612" alt="image" src="https://github.com/user-attachments/assets/dcfe437a-8b18-442e-8902-81559801fbb6" />
 
-## Entrevistados 
+## Interviewees 
 
    - Felipe Bianchi Piedra // Lawyer
-   - Ana María Chavarro Conde // Performance Analyst
-   - Francisco Javier Chavarro Conde // Developer
+     
+   - Ana María Chavarro Conde // Performance Analyst // https://estudianteccr-my.sharepoint.com/:v:/g/personal/jchavarro_estudiantec_cr/IQBCCIPmRKNUQItT_mE6pBeGAdeeQ2xYX6oNUpMMDdNW7dU?nav=eyJyZWZlcnJhbEluZm8iOnsicmVmZXJyYWxBcHAiOiJPbmVEcml2ZUZvckJ1c2luZXNzIiwicmVmZXJyYWxBcHBQbGF0Zm9ybSI6IldlYiIsInJlZmVycmFsTW9kZSI6InZpZXciLCJyZWZlcnJhbFZpZXciOiJNeUZpbGVzTGlua0NvcHkifX0&e=hNWbe5
+     
+   - Francisco Javier Chavarro Conde // Developer // https://estudianteccr-my.sharepoint.com/:v:/g/personal/jchavarro_estudiantec_cr/IQAKhMaJHWX9RIm7gFHuGdD0AZhXRi9ffmbFsEAiWdBOkbo?nav=eyJyZWZlcnJhbEluZm8iOnsicmVmZXJyYWxBcHAiOiJPbmVEcml2ZUZvckJ1c2luZXNzIiwicmVmZXJyYWxBcHBQbGF0Zm9ybSI6IldlYiIsInJlZmVycmFsTW9kZSI6InZpZXciLCJyZWZlcnJhbFZpZXciOiJNeUZpbGVzTGlua0NvcHkifX0&e=eZzLqk
 
 
 ----------------------------------------------------------------------
@@ -513,9 +515,13 @@ Azure DevOps Repo → Pipelines → Dev / Stage / Prod → Azure App Service
 
 Use **Builder Pattern** and **Strategy Pattern** to create different document processors for formats such as **.docx, .xlsx, .pdf, .jpg, .png**.
 
-**NotificationService** subscriptions are implemented using the **Observer Pattern**.
+Notification subscriptions are implemented through the **Observer Pattern** using the **NotificationService**, allowing components and services to receive processing status updates.
 
-Use the **Adapter Pattern** to map extracted data into the **DUA Word template**, using **FormatAdapters** and concrete formats such as: **Paragraph, Table, Label, Amount**.
+Use the **Adapter Pattern** to map extracted data into the official **DUA Word template**, using **FormatAdapters** and concrete formats such as **Paragraph, Table, Label, Amount**.
+
+Use the **Factory Pattern** to instantiate the correct document processor depending on the detected file type.
+
+Use the **Facade Pattern** in the **Services Layer** to provide simplified operations for document processing, DUA generation, and export.
 
 Use **Singleton Pattern** for shared services:
 
@@ -525,6 +531,9 @@ Use **Singleton Pattern** for shared services:
 * ApiClients
 * Settings classes
 
+Use the **Pub/Sub pattern** through **Redux State Management** to propagate application state updates across components.
+
+---
 
 ## **1.7 Project Scaffold**
 A folder within `/src` containing the project scaffold, generated based on the complete specification defined in sections **1.1** through **1.6**.
