@@ -236,6 +236,7 @@ Responsiveness is implemented using **TailwindCSS responsive utilities**, allowi
 
 
 ## **1.4 Security**
+
 Technologies, techniques, and classes—along with their respective locations within the project structure—responsible for authentication, authorization, permission management, and session handling.
 ## Multi-Factor Authentication (MFA)
 MFA supported: Yes
@@ -414,8 +415,99 @@ Authentication is restricted to **corporate identity providers** to ensure gover
 
 MFA management:
 Handled by Microsoft Entra ID security policies.
+
 ## **1.5 Layered Design**
-Design and explanation of the different layers of the frontend application.
+
+The frontend performs **SSR (Server-Side Rendering)** using **React.js and Node.js** hosted in **Azure App Service**.
+
+If there is no authenticated session, the **Authentication Layer** is invoked.
+
+If authentication succeeds, the requested resource is rendered through the **Components Layer**.
+
+The **Components Layer** follows **Atomic Design** principles (atoms, molecules, organisms, templates, and pages).
+
+Inside components, a **Hooks Layer** connects component actions with the **Services Layer**.
+
+The **Services Layer** contains the business operations of the application such as:
+
+* document processing requests
+* DUA generation orchestration
+* export operations
+
+Services may require access to the **Utils**, **ApiClients**, and **Settings** layers.
+
+The **ApiClients Layer** contains classes responsible for calling external APIs such as document processing or backend services.
+
+The **Settings Layer** reads environment variables and configuration values during runtime, including credentials stored in **Azure Key Vault**.
+
+ApiClients retrieve API URLs, credentials, and tokens from the **Settings Layer**.
+
+All ApiClient requests and responses are represented using classes in the **Models Layer**, which are validated using **Zod** in the **DataValidation Layer**.
+
+The **State Management Layer** manages shared frontend state using **Redux**.
+
+All layers may access the following shared layers:
+
+* Models
+* Utils
+* State Management
+
+The **NotificationService Layer** allows components and services to subscribe to asynchronous events.
+
+Long-running processes such as document analysis return results through **callback notifications** handled by the NotificationService.
+
+The **Logs Layer** records system events and sends telemetry data to **Azure Application Insights**.
+
+The **ExceptionHandling Layer** provides centralized error management shared across all layers.
+
+## Architecture Overview
+
+```
+          +----------------------+
+          |      User Browser    |
+          +----------+-----------+
+                     |
+                     v
+          +----------------------+
+          |    Azure App Service |
+          |  NodeJS + React SSR  |
+          +----------+-----------+
+                     |
+           SSR Request Handling
+                     |
+              Authentication
+                     |
+          +----------------------+
+          |   Components Layer   |
+          | Atomic Design UI     |
+          | Atoms → Pages        |
+          +----------+-----------+
+                     |
+                   Hooks
+                     |
+               Services Layer
+                     |
+   +----------------+----------------+
+   |                |                |
+ Utils          ApiClients        Settings
+                                      |
+                              Azure Key Vault
+                                      |
+                               Secrets / Config
+ApiClients → External APIs External APIs → Notification Service (Callbacks)
+
+Shared Layers:
+Models
+Zod Validation
+Redux State Management
+Exception Handling
+Logs → Azure Application Insights
+
+CI/CD:
+Azure DevOps Repo → Pipelines → Dev / Stage / Prod → Azure App Service
+```
+
+---
 
 ## **1.6 Design Patterns**
 Class design with their respective locations in the project structure, where object-oriented design patterns are applied when necessary, such as for security, UI refresh, notification handling, state storage, API calls, asynchronous operations, session invalidation, event-driven programming, and object creation.
