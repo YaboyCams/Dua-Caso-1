@@ -538,6 +538,75 @@ Use the **Pub/Sub pattern** through **Redux State Management** to propagate appl
 ## **1.7 Project Scaffold**
 A folder within `/src` containing the project scaffold, generated based on the complete specification defined in sections **1.1** through **1.6**.
 
+## 1.7 `/src` Project Scaffold
+
+The project must include a `/src` folder containing the initial scaffold of the application.  
+This scaffold is derived from the full specification defined in sections **1.1 to 1.6**, including architecture, layered design, SSR flow, Atomic Design structure, authentication, services, integrations, state management, validation, notifications, logging, exception handling, and design patterns.
+
+The purpose of this scaffold is to provide a clear and maintainable starting structure for the implementation of the system.
+
+### `/src` folder structure
+
+src/
+├── app/
+│   ├── login/
+│   ├── dashboard/
+│   ├── template-selection/
+│   ├── processing/
+│   ├── result/
+│   └── api/
+│
+├── components/
+│   ├── atoms/
+│   ├── molecules/
+│   ├── organisms/
+│   ├── templates/
+│   └── pages/
+│
+├── hooks/
+│
+├── services/
+│   ├── auth/
+│   ├── documents/
+│   ├── notifications/
+│   └── logging/
+│
+├── api-clients/
+│   ├── auth/
+│   ├── document/
+│   ├── notifications/
+│   └── logging/
+│
+├── settings/
+│
+├── models/
+│   ├── auth/
+│   ├── documents/
+│   ├── dua/
+│   ├── notifications/
+│   └── shared/
+│
+├── data-validation/
+│
+├── state-management/
+│
+├── utils/
+│
+├── exception-handling/
+│
+├── logs/
+│
+├── patterns/
+│   ├── builder/
+│   ├── strategy/
+│   ├── observer/
+│   ├── adapter/
+│   └── singleton/
+│
+├── document-parsers/
+│
+└── types/
+
 ## Authors
 
 * Camilo Allon Quesada
