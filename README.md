@@ -547,6 +547,7 @@ The purpose of this scaffold is to provide a clear and maintainable starting str
 
 ### `/src` folder structure
 
+```
 src/
 ├── app/
 │   ├── login/
@@ -606,6 +607,7 @@ src/
 ├── document-parsers/
 │
 └── types/
+```
 
 ## Authors
 
