@@ -535,9 +535,6 @@ Use the **Pub/Sub pattern** through **Redux State Management** to propagate appl
 
 ---
 
-## **1.7 Project Scaffold**
-A folder within `/src` containing the project scaffold, generated based on the complete specification defined in sections **1.1** through **1.6**.
-
 ## 1.7 `/src` Project Scaffold
 
 The project must include a `/src` folder containing the initial scaffold of the application.  
@@ -547,6 +544,7 @@ The purpose of this scaffold is to provide a clear and maintainable starting str
 
 ### `/src` folder structure
 
+```
 src/
 ├── app/
 │   ├── login/
@@ -606,6 +604,7 @@ src/
 ├── document-parsers/
 │
 └── types/
+```
 
 ## Authors
 
