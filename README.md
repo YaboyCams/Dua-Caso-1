@@ -34,7 +34,7 @@ It does not include a functional implementation at this stage.
 
 ## 1.1 Technology stack
 
-### [Technology Stack](./dua-streamliner/src)
+### Technology Stack
 
 * **Application type:** Server-side rendering (SSR) web application
 * **Web framework:** React.js `19.2`
@@ -57,7 +57,7 @@ It does not include a functional implementation at this stage.
 
 ---
 
-## [UX UI Analysis](./dua-streamliner/src/components/pages)
+## **1.2 UX / UI Analysis**
 
 
 ## Core Business Process
@@ -217,7 +217,7 @@ The user reviews the generated DUA document and verifies the extracted informati
 
 
 ----------------------------------------------------------------------
-## [ Component Design Strategy](./dua-streamliner/src/components)
+## **1.3 Component Design Strategy**
 
 ### Component Design Strategy
 
@@ -237,7 +237,7 @@ Responsiveness is implemented using **TailwindCSS responsive utilities**, allowi
 
 
 
-## [Security](./dua-streamliner/src/services/auth)
+## **1.4 Security**
 
 Technologies, techniques, and classes—along with their respective locations within the project structure—responsible for authentication, authorization, permission management, and session handling.
 ## Multi-Factor Authentication (MFA)
@@ -418,7 +418,7 @@ Authentication is restricted to **corporate identity providers** to ensure gover
 MFA management:
 Handled by Microsoft Entra ID security policies.
 
-## [Layered Design](./dua-streamliner/src)
+## **1.5 Layered Design**
 
 The frontend performs **SSR (Server-Side Rendering)** using **React.js and Node.js** hosted in **Azure App Service**.
 
@@ -511,7 +511,7 @@ Azure DevOps Repo → Pipelines → Dev / Stage / Prod → Azure App Service
 
 ---
 
-## [Design Patterns](./dua-streamliner/src/patterns)
+## **1.6 Design Patterns**
 
 Use **Builder Pattern** and **Strategy Pattern** to create different document processors for formats such as **.docx, .xlsx, .pdf, .jpg, .png**.
 
@@ -537,16 +537,11 @@ Use the **Pub/Sub pattern** through **Redux State Management** to propagate appl
 
 ## 1.7 `/src` Project Scaffold
 
-The project must include a `/src` folder containing the initial scaffold of the application.  
-This scaffold is derived from the full specification defined in sections **1.1 to 1.6**, including architecture, layered design, SSR flow, Atomic Design structure, authentication, services, integrations, state management, validation, notifications, logging, exception handling, and design patterns.
-
-The purpose of this scaffold is to provide a clear and maintainable starting structure for the implementation of the system.
-
 ### `/src` folder structure
 
 ```
 src/
-├── app/
+├── app/                             
 │   ├── login/
 │   ├── dashboard/
 │   ├── template-selection/
@@ -554,56 +549,110 @@ src/
 │   ├── result/
 │   └── api/
 │
-├── components/
+├── components/                      
 │   ├── atoms/
 │   ├── molecules/
 │   ├── organisms/
 │   ├── templates/
 │   └── pages/
 │
-├── hooks/
+├── hooks/                           
 │
-├── services/
+├── services/                        
+│   ├── auth/
+│   │   └── AuthService.ts
+│   │
+│   ├── dua/
+│   │   └── DuaService.ts           
+│   │
+│   ├── documents/
+│   │   └── DocumentService.ts
+│   │
+│   ├── notifications/
+│   │   └── NotificationService.ts
+│   │
+│   └── logging/
+│       └── LoggingService.ts
+│
+├── api-clients/                    
 │   ├── auth/
 │   ├── documents/
 │   ├── notifications/
 │   └── logging/
 │
-├── api-clients/
+├── settings/                        
+│   └── Settings.ts
+│
+├── models/                          
 │   ├── auth/
-│   ├── document/
+│   │   ├── User.ts
+│   │   ├── Role.ts
+│   │   └── Permission.ts
+│   │
+│   ├── documents/
+│   │   └── Document.ts
+│   │
+│   ├── dua/
+│   │   └── Dua.ts
+│   │
 │   ├── notifications/
-│   └── logging/
+│   │   └── Notification.ts
+│   │
+│   └── shared/
+│       └── ApiResponse.ts
 │
-├── settings/
-│
-├── models/
+├── data-validation/                 
 │   ├── auth/
 │   ├── documents/
 │   ├── dua/
-│   ├── notifications/
 │   └── shared/
 │
-├── data-validation/
+├── state-management/                
+│   ├── store.ts
+│   ├── slices/
+│   └── hooks.ts
 │
-├── state-management/
+├── utils/                           
 │
-├── utils/
+├── exception-handling/             
+│   └── ExceptionHandler.ts
 │
-├── exception-handling/
+├── logs/                           
+│   └── Logger.ts
 │
-├── logs/
-│
-├── patterns/
+├── patterns/                        
 │   ├── builder/
+│   │   └── DocumentProcessorBuilder.ts
+│   │
 │   ├── strategy/
-│   ├── observer/
+│   │   ├── DocumentProcessorStrategy.ts
+│   │   ├── PdfStrategy.ts
+│   │   ├── ExcelStrategy.ts
+│   │   ├── WordStrategy.ts
+│   │   └── ImageStrategy.ts
+│   │
+│   ├── factory/
+│   │   └── DocumentProcessorFactory.ts
+│   │
 │   ├── adapter/
+│   │   ├── ParagraphAdapter.ts
+│   │   ├── TableAdapter.ts
+│   │   ├── LabelAdapter.ts
+│   │   └── AmountAdapter.ts
+│   │
+│   ├── observer/
+│   │   └── NotificationObserver.ts
+│   │
 │   └── singleton/
+│       └── Singleton.ts
 │
-├── document-parsers/
+├── document-parsers/                
+│   ├── pdf/
+│   ├── excel/
+│   ├── word/
+│   └── image/
 │
-└── types/
+└── types/                           
 ```
 
 ## Authors
