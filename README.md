@@ -521,8 +521,6 @@ Use the **Adapter Pattern** to map extracted data into the official **DUA Word t
 
 Use the **Factory Pattern** to instantiate the correct document processor depending on the detected file type.
 
-Use the **Facade Pattern** in the **Services Layer** to provide simplified operations for document processing, DUA generation, and export.
-
 Use **Singleton Pattern** for shared services:
 
 * ExceptionHandling
