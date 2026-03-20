@@ -1,0 +1,16 @@
+// src/services/auth/index.ts
+export const login = async (username: string, password: string): Promise<any> => {
+    // Logic for user login
+};
+
+export const logout = async (): Promise<void> => {
+    // Logic for user logout
+};
+
+export const register = async (userData: any): Promise<any> => {
+    // Logic for user registration
+};
+
+export const getCurrentUser = (): any => {
+    // Logic to get the currently logged-in user
+};

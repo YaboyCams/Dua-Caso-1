@@ -1,0 +1,42 @@
+{
+  "name": "dua-streamliner",
+  "version": "1.0.0",
+  "description": "Intelligent System for Automated DUA Generation",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "node src/index.js",
+    "build": "tsc",
+    "test": "jest",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/dua-streamliner.git"
+  },
+  "keywords": [
+    "DUA",
+    "automation",
+    "document processing",
+    "customs"
+  ],
+  "author": "Camilo Allon Quesada, Jose Pablo Chavarro Conde",
+  "license": "MIT",
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "redux": "^5.0.1",
+    "axios": "^0.21.1",
+    "i18next": "^21.6.0",
+    "zod": "^4.3.6",
+    "tailwindcss": "^3.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "jest": "^30.2.0",
+    "eslint": "^10.0.2",
+    "prettier": "^3.8.1",
+    "husky": "^9.1.7",
+    "playwright": "^1.58.2"
+  }
+}
