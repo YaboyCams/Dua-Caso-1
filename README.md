@@ -34,7 +34,7 @@ It does not include a functional implementation at this stage.
 
 ## 1.1 Technology stack
 
-### Technology Stack
+### [Technology Stack](./dua-streamliner/src)
 
 * **Application type:** Server-side rendering (SSR) web application
 * **Web framework:** React.js `19.2`
@@ -57,7 +57,7 @@ It does not include a functional implementation at this stage.
 
 ---
 
-## **1.2 UX / UI Analysis**
+## [UX UI Analysis](./dua-streamliner/src/components/pages)
 
 
 ## Core Business Process
@@ -217,7 +217,7 @@ The user reviews the generated DUA document and verifies the extracted informati
 
 
 ----------------------------------------------------------------------
-## **1.3 Component Design Strategy**
+## [ Component Design Strategy](./dua-streamliner/src/components)
 
 ### Component Design Strategy
 
@@ -237,7 +237,7 @@ Responsiveness is implemented using **TailwindCSS responsive utilities**, allowi
 
 
 
-## **1.4 Security**
+## [Security](./dua-streamliner/src/services/auth)
 
 Technologies, techniques, and classes—along with their respective locations within the project structure—responsible for authentication, authorization, permission management, and session handling.
 ## Multi-Factor Authentication (MFA)
@@ -418,7 +418,7 @@ Authentication is restricted to **corporate identity providers** to ensure gover
 MFA management:
 Handled by Microsoft Entra ID security policies.
 
-## **1.5 Layered Design**
+## [Layered Design](./dua-streamliner/src)
 
 The frontend performs **SSR (Server-Side Rendering)** using **React.js and Node.js** hosted in **Azure App Service**.
 
@@ -511,7 +511,7 @@ Azure DevOps Repo → Pipelines → Dev / Stage / Prod → Azure App Service
 
 ---
 
-## **1.6 Design Patterns**
+## [Design Patterns](./dua-streamliner/src/patterns)
 
 Use **Builder Pattern** and **Strategy Pattern** to create different document processors for formats such as **.docx, .xlsx, .pdf, .jpg, .png**.
 
