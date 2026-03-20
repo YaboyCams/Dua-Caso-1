@@ -541,118 +541,163 @@ Use the **Pub/Sub pattern** through **Redux State Management** to propagate appl
 
 ```
 src/
-├── app/                             
+├── app/                            → SSR routes and pages
+│   ├── layout.tsx
+│   ├── page.tsx
+│   ├── globals.css
 │   ├── login/
+│   │   └── page.tsx
 │   ├── dashboard/
-│   ├── template-selection/
-│   ├── processing/
-│   ├── result/
-│   └── api/
-│
-├── components/                      
-│   ├── atoms/
-│   ├── molecules/
-│   ├── organisms/
+│   │   └── page.tsx
+│   ├── dua/
+│   │   ├── page.tsx
+│   │   └── [id]/
+│   ├── reports/
+│   │   └── page.tsx
 │   ├── templates/
+│   │   └── page.tsx
+│   └── users/
+│       └── page.tsx
+│
+├── components/                     → Atomic Design UI
+│   ├── atoms/
+│   │   ├── Button/
+│   │   ├── ConfidenceIndicator/
+│   │   ├── Input/
+│   │   ├── Label/
+│   │   └── atoms.css
+│   ├── molecules/
+│   │   ├── FileUploader/
+│   │   ├── FormField/
+│   │   └── molecules.css
+│   ├── organisms/
+│   │   ├── DuaForm/
+│   │   ├── Navbar/
+│   │   └── organisms.css
+│   ├── templates/
+│   │   ├── MainLayout/
+│   │   └── templates.css
 │   └── pages/
+│       └── pages.css
 │
-├── hooks/                           
+├── hooks/                          → UI to service connection
+│   ├── useAuth.ts
+│   ├── useDua.ts
+│   ├── useFileUpload.ts
+│   └── useNotification.ts
 │
-├── services/                        
-│   ├── auth/
-│   │   └── AuthService.ts
-│   │
-│   ├── dua/
-│   │   └── DuaService.ts           
-│   │
-│   ├── documents/
-│   │   └── DocumentService.ts
-│   │
-│   ├── notifications/
-│   │   └── NotificationService.ts
-│   │
-│   └── logging/
-│       └── LoggingService.ts
+├── services/                       → Application operations
+│   ├── AuthService.ts
+│   ├── DuaService.ts
+│   ├── FileService.ts
+│   ├── UserService.ts
+│   └── index.ts
 │
-├── api-clients/                    
-│   ├── auth/
-│   ├── documents/
-│   ├── notifications/
-│   └── logging/
+├── apiClients/                     → External API access
+│   ├── BaseApiClient.ts
+│   ├── AuthApiClient.ts
+│   ├── DuaApiClient.ts
+│   ├── FileApiClient.ts
+│   ├── UserApiClient.ts
+│   └── index.ts
 │
-├── settings/                        
-│   └── Settings.ts
+├── auth/                           → Authentication and authorization
+│   ├── authConfig.ts
+│   ├── permissions.ts
+│   ├── roles.ts
+│   └── index.ts
 │
-├── models/                          
-│   ├── auth/
-│   │   ├── User.ts
-│   │   ├── Role.ts
-│   │   └── Permission.ts
-│   │
-│   ├── documents/
-│   │   └── Document.ts
-│   │
-│   ├── dua/
-│   │   └── Dua.ts
-│   │
-│   ├── notifications/
-│   │   └── Notification.ts
-│   │
-│   └── shared/
-│       └── ApiResponse.ts
-│
-├── data-validation/                 
-│   ├── auth/
-│   ├── documents/
-│   ├── dua/
-│   └── shared/
-│
-├── state-management/                
-│   ├── store.ts
-│   ├── slices/
-│   └── hooks.ts
-│
-├── utils/                           
-│
-├── exception-handling/             
-│   └── ExceptionHandler.ts
-│
-├── logs/                           
-│   └── Logger.ts
-│
-├── patterns/                        
-│   ├── builder/
-│   │   └── DocumentProcessorBuilder.ts
-│   │
-│   ├── strategy/
-│   │   ├── DocumentProcessorStrategy.ts
-│   │   ├── PdfStrategy.ts
-│   │   ├── ExcelStrategy.ts
+├── documentProcessors/             → Builder + Strategy + Adapters
+│   ├── DocumentProcessorBuilder.ts
+│   ├── strategies/
+│   │   ├── IDocumentStrategy.ts
 │   │   ├── WordStrategy.ts
+│   │   ├── ExcelStrategy.ts
+│   │   ├── PdfStrategy.ts
 │   │   └── ImageStrategy.ts
-│   │
-│   ├── factory/
-│   │   └── DocumentProcessorFactory.ts
-│   │
-│   ├── adapter/
+│   ├── formatAdapters/
+│   │   ├── IFormatAdapter.ts
 │   │   ├── ParagraphAdapter.ts
+│   │   ├── BulletsAdapter.ts
 │   │   ├── TableAdapter.ts
 │   │   ├── LabelAdapter.ts
-│   │   └── AmountAdapter.ts
-│   │
-│   ├── observer/
-│   │   └── NotificationObserver.ts
-│   │
-│   └── singleton/
-│       └── Singleton.ts
+│   │   ├── AmountAdapter.ts
+│   │   └── index.ts
+│   └── index.ts
 │
-├── document-parsers/                
-│   ├── pdf/
-│   ├── excel/
-│   ├── word/
-│   └── image/
+├── notificationService/            → Observer / callback notifications
+│   └── NotificationService.ts
 │
-└── types/                           
+├── models/                         → Shared data models
+│   ├── ApiResponse.ts
+│   ├── Dua.ts
+│   ├── FileUpload.ts
+│   ├── Permission.ts
+│   ├── Role.ts
+│   ├── User.ts
+│   └── index.ts
+│
+├── validation/                     → Zod validation layer
+│   ├── duaSchema.ts
+│   ├── fileSchema.ts
+│   ├── userSchema.ts
+│   └── index.ts
+│
+├── state/                          → State management
+│   ├── StoreProvider.tsx
+│   ├── hooks.ts
+│   ├── store.ts
+│   └── slices/
+│       ├── authSlice.ts
+│       ├── duaSlice.ts
+│       └── fileSlice.ts
+│
+├── settings/                       → Configuration / Key Vault access
+│   └── Settings.ts
+│
+├── logs/                           → Logging layer
+│   └── Logger.ts
+│
+├── exceptionHandling/              → Shared exception handling
+│   └── ExceptionHandler.ts
+│
+├── utils/                          → Reusable helpers
+│   ├── constants.ts
+│   ├── formatters.ts
+│   └── index.ts
+│
+├── i18n/                           → Internationalization
+│   ├── config.ts
+│   └── locales/
+│       ├── en.json
+│       └── es.json
+│
+├── __tests__/                      → Unit and e2e tests
+│   ├── setup.ts
+│   ├── unit/
+│   │   ├── auth/
+│   │   ├── documentProcessors/
+│   │   ├── notificationService/
+│   │   └── services/
+│   └── e2e/
+│       └── dua.spec.ts
+│
+├── __mocks__/                      → Test mocks
+│   └── styleMock.ts
+│
+├── types/                          → Type declarations
+├── instructions.md                 → Project notes / scaffold instructions
+├── package.json
+├── tsconfig.json
+├── jest.config.ts
+├── playwright.config.ts
+├── next.config.ts
+├── .env.example
+├── .eslintrc.json
+├── .prettierrc
+├── .lintstagedrc.json
+└── .husky/
+    └── pre-commit                                           
 ```
 
 ## Authors
