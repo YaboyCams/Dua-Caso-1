@@ -229,17 +229,35 @@ Components are organized hierarchically as **atoms, molecules, organisms, templa
 Basic elements are created once and reused across the application to ensure consistency and reduce duplication.
 
 **Internationalization by:**
-Internationalization is implemented using **i18next**, with centralized translation files.
+Internationalization is implemented using **i18next**, with centralized translation files in [`src/i18n/`](src/i18n/).
 Components reference translation keys instead of hardcoded text.
 
 **Responsiveness by:**
 Responsiveness is implemented using **TailwindCSS responsive utilities**, allowing layouts to adapt to different screen sizes such as desktop, tablet, and mobile devices.
 
+### Visual Component Architecture
 
+| Level | Folder | Key Files |
+|---|---|---|
+| Atoms | [`src/components/atoms/`](src/components/atoms/) | [`Button/`](src/components/atoms/Button/Button.tsx) · [`Input/`](src/components/atoms/Input/Input.tsx) · [`Label/`](src/components/atoms/Label/Label.tsx) · [`ConfidenceIndicator/`](src/components/atoms/ConfidenceIndicator/ConfidenceIndicator.tsx) |
+| Molecules | [`src/components/molecules/`](src/components/molecules/) | [`FileUploader/`](src/components/molecules/FileUploader/FileUploader.tsx) · [`FormField/`](src/components/molecules/FormField/FormField.tsx) |
+| Organisms | [`src/components/organisms/`](src/components/organisms/) | [`DuaForm/`](src/components/organisms/DuaForm/DuaForm.tsx) · [`Navbar/`](src/components/organisms/Navbar/Navbar.tsx) |
+| Templates | [`src/components/templates/`](src/components/templates/) | [`MainLayout/`](src/components/templates/MainLayout/MainLayout.tsx) |
+| Pages | [`src/components/pages/`](src/components/pages/) | `pages.css` |
 
 ## [**1.4 Security**](src/auth)
 
 Technologies, techniques, and classes—along with their respective locations within the project structure—responsible for authentication, authorization, permission management, and session handling.
+
+### Authentication Configuration
+
+| File | Description |
+|---|---|
+| [`src/auth/authConfig.ts`](src/auth/authConfig.ts) | MSAL configuration: `clientId`, `authority`, `redirectUri`, OAuth scopes for Dua and Users APIs |
+| [`src/auth/roles.ts`](src/auth/roles.ts) | `RoleDefinitions` map — associates each `RoleType` with its allowed `PermissionCodes` |
+| [`src/auth/permissions.ts`](src/auth/permissions.ts) | `hasPermission()` and `getPermissionsForRole()` — runtime RBAC enforcement helpers |
+| [`src/auth/index.ts`](src/auth/index.ts) | Barrel export for the auth layer |
+
 ## Multi-Factor Authentication (MFA)
 MFA supported: Yes
 
@@ -511,7 +529,7 @@ Azure DevOps Repo → Pipelines → Dev / Stage / Prod → Azure App Service
 
 ---
 
-## **[1.6 Design Patterns](src/patterns)**
+## **[1.6 Design Patterns](src/documentProcessors)**
 
 Use **Builder Pattern** and **Strategy Pattern** to create different document processors for formats such as **.docx, .xlsx, .pdf, .jpg, .png**.
 
@@ -530,6 +548,28 @@ Use **Singleton Pattern** for shared services:
 * Settings classes
 
 Use the **Pub/Sub pattern** through **Redux State Management** to propagate application state updates across components.
+
+### Pattern Implementation
+
+| Pattern | File(s) |
+|---|---|
+| Builder + Factory | [`src/documentProcessors/DocumentProcessorBuilder.ts`](src/documentProcessors/DocumentProcessorBuilder.ts) |
+| Strategy — Interface | [`src/documentProcessors/strategies/IDocumentStrategy.ts`](src/documentProcessors/strategies/IDocumentStrategy.ts) |
+| Strategy — Word | [`src/documentProcessors/strategies/WordStrategy.ts`](src/documentProcessors/strategies/WordStrategy.ts) |
+| Strategy — Excel | [`src/documentProcessors/strategies/ExcelStrategy.ts`](src/documentProcessors/strategies/ExcelStrategy.ts) |
+| Strategy — PDF | [`src/documentProcessors/strategies/PdfStrategy.ts`](src/documentProcessors/strategies/PdfStrategy.ts) |
+| Strategy — Image | [`src/documentProcessors/strategies/ImageStrategy.ts`](src/documentProcessors/strategies/ImageStrategy.ts) |
+| Adapter — Interface | [`src/documentProcessors/formatAdapters/IFormatAdapter.ts`](src/documentProcessors/formatAdapters/IFormatAdapter.ts) |
+| Adapter — Paragraph | [`src/documentProcessors/formatAdapters/ParagraphAdapter.ts`](src/documentProcessors/formatAdapters/ParagraphAdapter.ts) |
+| Adapter — Bullets | [`src/documentProcessors/formatAdapters/BulletsAdapter.ts`](src/documentProcessors/formatAdapters/BulletsAdapter.ts) |
+| Adapter — Table | [`src/documentProcessors/formatAdapters/TableAdapter.ts`](src/documentProcessors/formatAdapters/TableAdapter.ts) |
+| Adapter — Label | [`src/documentProcessors/formatAdapters/LabelAdapter.ts`](src/documentProcessors/formatAdapters/LabelAdapter.ts) |
+| Adapter — Amount | [`src/documentProcessors/formatAdapters/AmountAdapter.ts`](src/documentProcessors/formatAdapters/AmountAdapter.ts) |
+| Observer (Pub/Sub) | [`src/notificationService/NotificationService.ts`](src/notificationService/NotificationService.ts) |
+| Singleton — State | [`src/state/store.ts`](src/state/store.ts) · [`src/state/StoreProvider.tsx`](src/state/StoreProvider.tsx) |
+| Singleton — Settings | [`src/settings/Settings.ts`](src/settings/Settings.ts) |
+| Singleton — Logger | [`src/logs/Logger.ts`](src/logs/Logger.ts) |
+| Singleton — ExceptionHandler | [`src/exceptionHandling/ExceptionHandler.ts`](src/exceptionHandling/ExceptionHandler.ts) |
 
 ---
 
@@ -697,6 +737,76 @@ src/
 └── .husky/
     └── pre-commit                                           
 ```
+
+---
+
+### [State Management](src/state/)
+
+Redux is used for shared frontend state via the **Pub/Sub pattern**. The store is composed of three slices:
+
+| File | Description |
+|---|---|
+| [`src/state/store.ts`](src/state/store.ts) | Configures the Redux store with `auth`, `dua`, and `file` reducers |
+| [`src/state/StoreProvider.tsx`](src/state/StoreProvider.tsx) | Wraps the application with the Redux `Provider` |
+| [`src/state/hooks.ts`](src/state/hooks.ts) | Typed `useAppSelector` and `useAppDispatch` hooks |
+| [`src/state/slices/authSlice.ts`](src/state/slices/authSlice.ts) | Auth state: `isAuthenticated`, `user`, `role`, `accessToken` |
+| [`src/state/slices/duaSlice.ts`](src/state/slices/duaSlice.ts) | DUA process state: generation status, fields, confidence levels |
+| [`src/state/slices/fileSlice.ts`](src/state/slices/fileSlice.ts) | File upload state: selected files, upload progress |
+
+---
+
+### [Data Validation](src/validation/)
+
+Validation is implemented using **Zod** schemas. All API inputs and model shapes are validated before use.
+
+| File | Description |
+|---|---|
+| [`src/validation/duaSchema.ts`](src/validation/duaSchema.ts) | Schemas for DUA generation input, field shape, and full DUA document |
+| [`src/validation/fileSchema.ts`](src/validation/fileSchema.ts) | Validates uploaded file metadata and allowed extensions |
+| [`src/validation/userSchema.ts`](src/validation/userSchema.ts) | Validates user creation and update payloads |
+| [`src/validation/index.ts`](src/validation/index.ts) | Barrel export for all schemas |
+
+---
+
+### [Observability & Exception Handling](src/logs/)
+
+| File | Description |
+|---|---|
+| [`src/logs/Logger.ts`](src/logs/Logger.ts) | Singleton logger — sends `info`, `warn`, `error`, and `trackEvent` telemetry to **Azure Application Insights** |
+| [`src/exceptionHandling/ExceptionHandler.ts`](src/exceptionHandling/ExceptionHandler.ts) | Singleton — centralized `handle()` and `handleAsync()` methods used by all layers |
+
+---
+
+### [Testing](src/__tests__/)
+
+| File / Folder | Description |
+|---|---|
+| [`src/__tests__/unit/auth/`](src/__tests__/unit/auth/permissions.test.ts) | Unit tests for `hasPermission` and `getPermissionsForRole` |
+| [`src/__tests__/unit/documentProcessors/`](src/__tests__/unit/documentProcessors/DocumentProcessorBuilder.test.ts) | Unit tests for `DocumentProcessorBuilder` and strategy selection |
+| [`src/__tests__/unit/notificationService/`](src/__tests__/unit/notificationService/NotificationService.test.ts) | Unit tests for subscribe, notify, and unsubscribe flows |
+| [`src/__tests__/unit/services/`](src/__tests__/unit/services/DuaService.test.ts) | Unit tests for `DuaService` orchestration |
+| [`src/__tests__/e2e/dua.spec.ts`](src/__tests__/e2e/dua.spec.ts) | Playwright end-to-end test: full DUA generation flow |
+| [`src/__tests__/setup.ts`](src/__tests__/setup.ts) | Jest global test setup |
+| [`src/__mocks__/styleMock.ts`](src/__mocks__/styleMock.ts) | CSS module mock for Jest |
+
+---
+
+### [Configuration](src/)
+
+| File | Description |
+|---|---|
+| [`src/next.config.ts`](src/next.config.ts) | Next.js config: `standalone` output, i18n locales (`en`, `es`), Azure Key Vault and App Insights runtime config |
+| [`src/jest.config.ts`](src/jest.config.ts) | Jest config: `ts-jest` preset, `jsdom` environment, path aliases for all layers (`@components`, `@services`, `@auth`, etc.) |
+| [`src/playwright.config.ts`](src/playwright.config.ts) | Playwright config: Chromium + Firefox projects, `baseURL`, screenshot on failure, CI retry policy |
+| [`src/tsconfig.json`](src/tsconfig.json) | TypeScript compiler options and path aliases |
+| [`src/.env.example`](src/.env.example) | Environment variable template: Azure AD, Key Vault, App Insights, API base URL, callback URL |
+| [`src/.eslintrc.json`](src/.eslintrc.json) | ESLint ruleset |
+| [`src/.prettierrc`](src/.prettierrc) | Prettier formatting rules |
+| [`src/.lintstagedrc.json`](src/.lintstagedrc.json) | lint-staged config for pre-commit hooks |
+| [`src/.husky/pre-commit`](src/.husky/pre-commit) | Husky pre-commit hook — runs lint-staged before every commit |
+| [`src/settings/Settings.ts`](src/settings/Settings.ts) | Singleton — resolves secrets from Azure Key Vault or environment variables at runtime |
+
+---
 
 ## Authors
 
