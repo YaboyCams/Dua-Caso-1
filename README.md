@@ -243,7 +243,7 @@ Responsiveness is implemented using **TailwindCSS responsive utilities**, allowi
 | Molecules | [`src/components/molecules/`](src/components/molecules/) | [`FileUploader/`](src/components/molecules/FileUploader/FileUploader.tsx) · [`FormField/`](src/components/molecules/FormField/FormField.tsx) |
 | Organisms | [`src/components/organisms/`](src/components/organisms/) | [`DuaForm/`](src/components/organisms/DuaForm/DuaForm.tsx) · [`Navbar/`](src/components/organisms/Navbar/Navbar.tsx) |
 | Templates | [`src/components/templates/`](src/components/templates/) | [`MainLayout/`](src/components/templates/MainLayout/MainLayout.tsx) |
-| Pages | [`src/components/pages/`](src/components/pages/) | `pages.css` |
+| Pages | [`src/components/pages/`](src/components/pages/) | [`pages.css`](src/components/pages/pages.css) |
 
 ## [**1.4 Security**](src/auth)
 
