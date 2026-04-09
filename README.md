@@ -263,9 +263,9 @@ MFA supported: Yes
 
 Supported MFA methods:
 - Microsoft Authenticator App
--Time-based OTP (TOTP)
--SMS One-Time Password
--Voice Call OTP
+- Time-based OTP (TOTP)
+- SMS One-Time Password
+- Voice Call OTP
 
 ## Single Sign-On (SSO)
 
@@ -805,6 +805,696 @@ Validation is implemented using **Zod** schemas. All API inputs and model shapes
 | [`src/.lintstagedrc.json`](src/.lintstagedrc.json) | lint-staged config for pre-commit hooks |
 | [`src/.husky/pre-commit`](src/.husky/pre-commit) | Husky pre-commit hook — runs lint-staged before every commit |
 | [`src/settings/Settings.ts`](src/settings/Settings.ts) | Singleton — resolves secrets from Azure Key Vault or environment variables at runtime |
+
+---
+
+---
+
+# Backend
+
+## [Technology Stack](duabusiness/)
+
+| Dimension | Decision | Justification |
+|---|---|---|
+| **Transport protocol** | HTTPS / TLS 1.3 | Internet-facing API; TLS is mandatory for customs data in transit |
+| **API style** | REST over HTTP/1.1 | Broad integration support, native HTTP caching, well-understood by customs tooling consumers |
+| **API contract standard** | OpenAPI 3.1 | Auto-generated documentation, client SDK generation, and contract-first design |
+| **Async / long-running operations** | Azure Notification Hubs (push) + polling fallback | DUA generation can take 30–120 seconds; push notifications decouple the client from blocking waits |
+| **Coding language** | C# — .NET 9 | Native Azure integration, ASP.NET Core performance, strong typing aligned with the customs domain model |
+| **Web framework** | ASP.NET Core 9 (Minimal API + Controllers) | Minimal API for lightweight endpoints; Controllers for complex resource domains (DUA, Files, Users) |
+| **ORM** | Entity Framework Core 9 | Code-first migrations, LINQ query composition, Azure SQL compatibility |
+| **Database** | Azure SQL Database (General Purpose tier) | Relational structure fits the DUA field model; managed failover, auditing built-in |
+| **Blob storage** | Azure Blob Storage | Stores raw uploaded documents and generated DUA `.docx` files outside the database |
+| **Unit testing** | xUnit 2.9 | Standard .NET testing framework; compatible with Azure DevOps test reporting |
+| **Integration testing** | Microsoft.AspNetCore.Mvc.Testing | In-process test server to test full HTTP pipeline without external dependencies |
+| **Data validation** | FluentValidation 11 | Declarative validator classes per request model; separates validation from controller logic |
+| **API documentation** | Swashbuckle (Swagger UI) | Auto-generates interactive OpenAPI docs from controller annotations |
+| **Code style** | EditorConfig + StyleCop.Analyzers | Enforces consistent C# formatting across the team |
+| **Code automation** | Husky.NET (pre-commit hooks) | Runs linting and unit tests before every commit |
+| **Cloud service** | Azure Cloud Services | Same ecosystem as the frontend; unified identity (Entra ID), billing, and monitoring |
+| **Hosting** | Azure App Service (B3 tier, auto-scale to P2v3) | PaaS removes OS patching; auto-scale handles processing spikes |
+| **API gateway** | Azure API Management (Developer tier → Standard in prod) | Rate limiting, JWT validation at the edge, OpenAPI publishing, versioning |
+| **Async messaging** | Azure Notification Hubs | Sends real-time processing status updates to the frontend callback URL |
+| **File streaming** | Azure Blob Storage multipart streaming | Large files are streamed directly to blob; avoids in-memory buffering on the API server |
+| **AI / OCR service** | Azure AI Document Intelligence (Form Recognizer) | Extracts structured fields from invoices, packing lists, and scanned images; returns bounding-box confidence scores used to populate `ConfidenceLevel` |
+| **Environments** | Development · Stage · Production | Separate App Service slots; Stage is a full-fidelity copy of Production for final validation |
+| **Repository** | Monorepo — `duabusiness/` folder | Shares the same Azure DevOps repo as the frontend (`duawebapp/`) |
+
+---
+
+## [Services / Microservices and Repository Architecture](duabusiness/)
+
+**Architecture style: Modular Monolith**
+
+A single deployable ASP.NET Core application is used, internally organized into bounded contexts aligned with DDD principles. This decision avoids the operational complexity of microservices (distributed tracing, network retries, saga orchestration) at a stage where the domain is still being validated and the team size does not justify independent deployment pipelines per service.
+
+**Repository strategy: Monorepo**
+
+Both `duawebapp/` (frontend) and `duabusiness/` (backend) live in the same Azure DevOps repository. This allows a single pull request to span API contract changes and the frontend API client that consumes them, eliminating version-skew between layers.
+
+**Bounded contexts (DDD)**
+
+| Bounded Context | Responsibility | Key Folder |
+|---|---|---|
+| **Identity** | Authentication token validation, role and permission enforcement, session metadata | [`duabusiness/Identity/`](duabusiness/Identity/) |
+| **DocumentIngestion** | Receives uploaded files, streams to Azure Blob Storage, triggers processing pipeline | [`duabusiness/DocumentIngestion/`](duabusiness/DocumentIngestion/) |
+| **DuaGeneration** | Orchestrates OCR extraction, semantic mapping, confidence scoring, and `.docx` generation | [`duabusiness/DuaGeneration/`](duabusiness/DuaGeneration/) |
+| **TemplateManagement** | CRUD for official DUA templates stored in blob and registered in the database | [`duabusiness/TemplateManagement/`](duabusiness/TemplateManagement/) |
+| **UserManagement** | User CRUD, role assignments, audit trail of role changes | [`duabusiness/UserManagement/`](duabusiness/UserManagement/) |
+| **Observability** | Structured logging, event tracking, health endpoints | [`duabusiness/Observability/`](duabusiness/Observability/) |
+
+Each bounded context owns its own controllers, services, domain models, repositories, and validators. Cross-context communication happens only through shared interfaces in [`duabusiness/Shared/`](duabusiness/Shared/), never by directly calling another context's internal classes.
+
+---
+
+## [Layered Design](duabusiness/)
+
+The backend follows a **Clean Architecture** layering, with dependency flow pointing inward (infrastructure depends on domain, never the reverse).
+
+```
+HTTP Request
+     │
+     ▼
+┌─────────────────────────────┐
+│     API Layer               │  ASP.NET Core Controllers / Minimal API routes
+│  (Controllers, Middleware)  │  JWT validation middleware, rate limiting, request logging
+└────────────┬────────────────┘
+             │
+             ▼
+┌─────────────────────────────┐
+│   Application Layer         │  Command / Query handlers (CQRS-lite)
+│  (Services, Validators)     │  FluentValidation, orchestration logic, no domain rules here
+└────────────┬────────────────┘
+             │
+             ▼
+┌─────────────────────────────┐
+│   Domain Layer              │  Entities, Value Objects, Domain Services, Repository interfaces
+│  (Entities, Aggregates)     │  Pure C# — no framework dependencies
+└────────────┬────────────────┘
+             │
+             ▼
+┌─────────────────────────────┐
+│   Infrastructure Layer      │  EF Core DbContext, Azure Blob Storage client,
+│  (Repositories, Adapters)   │  Azure AI Document Intelligence adapter, Notification Hubs adapter
+└─────────────────────────────┘
+
+Shared / Cross-cutting:
+  Settings (Azure Key Vault)
+  Logger (Application Insights)
+  ExceptionHandler (global middleware)
+  Models / DTOs
+```
+
+**Request flow narrative:**
+
+1. An HTTP request arrives at **Azure API Management**, which validates the JWT issued by Microsoft Entra ID and enforces rate limits.
+2. APIM forwards the request to the **ASP.NET Core API Layer** running in Azure App Service.
+3. The JWT middleware extracts the user's role and injects it into the `HttpContext`.
+4. The controller delegates work to the **Application Layer** service, passing validated request DTOs.
+5. Application services call **Domain Layer** aggregates and repository interfaces.
+6. The **Infrastructure Layer** fulfills repository contracts via EF Core (Azure SQL) or the Blob Storage / AI Document Intelligence clients.
+7. For long-running operations (DUA generation), the Application Layer returns a `202 Accepted` with a `processId`, then pushes progress updates via **Azure Notification Hubs** to the frontend callback URL.
+
+---
+
+## [Security](duabusiness/Identity/)
+
+Security decisions that apply across all backend layers:
+
+### Transport
+
+- **TLS 1.3** enforced at Azure API Management level. HTTP requests are rejected with `301 Redirect` to HTTPS.
+- **HSTS** header (`max-age=31536000; includeSubDomains`) is set on all responses.
+
+### Authentication & Token Validation
+
+- All endpoints require a **Bearer JWT** issued by **Microsoft Entra ID**.
+- JWTs are validated at the **Azure API Management** edge (signature, expiry, audience, issuer) before reaching the application server.
+- Inside the application, the **Identity middleware** (`duabusiness/Identity/Middleware/RoleEnforcementMiddleware.cs`) reads the `roles` claim and maps it to the internal `RoleType` enum.
+- Tokens have a **60-minute expiry**. Refresh is handled by the frontend via MSAL; the backend never stores refresh tokens.
+
+### Authorization
+
+- **RBAC**: every controller action is decorated with `[RequirePermission(PermissionCode.X)]`. The `PermissionAuthorizationHandler` resolves the user's role from the JWT and checks it against the permission map defined in `duabusiness/Identity/Authorization/PermissionDefinitions.cs`.
+- **PBAC policies** are enforced inside Application Layer services (e.g., `POL-001 ExportOnlyWhenReviewed` is checked in `DuaExportService` before generating the download URL).
+- **ACL**: the `DuaProcess` entity stores `ownerId` and `assignedReviewerId`. The `DuaAccessGuard` service rejects edit operations when the calling user is neither the owner, the assigned reviewer, nor a `SYS_ADMIN`.
+
+### Encryption
+
+- **Data in transit**: TLS 1.3 (see above).
+- **Data at rest**: Azure SQL Transparent Data Encryption (TDE) with a customer-managed key stored in Azure Key Vault. Azure Blob Storage uses service-managed encryption (AES-256).
+- **Sensitive fields** (e.g., OAuth client secrets, database connection strings) are never in source code. They are resolved at runtime from **Azure Key Vault** via the `Settings` singleton (`duabusiness/Shared/Settings/Settings.cs`).
+
+### API Surface Hardening
+
+| Control | Value | Implementation |
+|---|---|---|
+| Max payload size (general) | 10 MB | `RequestSizeLimitAttribute` on base controller |
+| Max payload size (file upload) | 100 MB per file, 500 MB per batch | `DisableRequestSizeLimit` + manual size check in `FileUploadService` |
+| Rate limit — general endpoints | 200 requests / minute / user | Azure API Management inbound policy |
+| Rate limit — DUA generation | 10 requests / minute / user | Azure API Management inbound policy on `/api/v1/dua/generate` |
+| Max concurrent DUA processes per user | 3 | Checked in `DuaGenerationService` before enqueuing |
+| OWASP API Top 10 mitigations | Injection: parameterized EF Core queries. Broken Auth: APIM JWT validation. Excessive Data Exposure: response DTOs never expose internal entity IDs or raw file paths. | Applied across all layers |
+
+### Secrets Management
+
+**Secure store service:** `Azure Key Vault`
+
+| Secret Name | Content |
+|---|---|
+| `entra-client-id` | Azure Entra ID application client ID |
+| `entra-tenant-id` | Azure Entra ID tenant ID |
+| `sql-connection-string` | Azure SQL connection string with credentials |
+| `blob-storage-connection` | Azure Blob Storage account connection string |
+| `notification-hubs-connection` | Azure Notification Hubs connection string |
+| `document-intelligence-key` | Azure AI Document Intelligence API key |
+| `app-insights-connection` | Azure Application Insights connection string |
+| `encryption-key` | AES-256 key for field-level encryption on sensitive DUA data |
+
+---
+
+## [Design Patterns](duabusiness/)
+
+| Pattern | Usage | File(s) |
+|---|---|---|
+| **Repository** | Abstracts data access; domain layer depends on `IRepository<T>` interfaces, never on EF Core directly | [`duabusiness/Shared/Repositories/IRepository.cs`](duabusiness/Shared/Repositories/IRepository.cs) |
+| **Unit of Work** | Wraps multiple repository operations in a single EF Core transaction | [`duabusiness/Shared/Repositories/IUnitOfWork.cs`](duabusiness/Shared/Repositories/IUnitOfWork.cs) |
+| **CQRS-lite (Command / Query)** | Commands mutate state; Queries return data. Separated by folder convention, not by separate buses | [`duabusiness/DuaGeneration/Commands/`](duabusiness/DuaGeneration/Commands/) · [`duabusiness/DuaGeneration/Queries/`](duabusiness/DuaGeneration/Queries/) |
+| **Strategy** | Selects the correct document parser (Word, Excel, PDF, Image) at runtime based on MIME type | [`duabusiness/DocumentIngestion/Strategies/`](duabusiness/DocumentIngestion/Strategies/) |
+| **Factory** | `DocumentParserFactory` instantiates the right strategy without exposing concrete types | [`duabusiness/DocumentIngestion/Factories/DocumentParserFactory.cs`](duabusiness/DocumentIngestion/Factories/DocumentParserFactory.cs) |
+| **Adapter** | `DocumentIntelligenceAdapter` wraps the Azure AI SDK; `NotificationHubAdapter` wraps the Azure SDK — both implement internal interfaces | [`duabusiness/Shared/Adapters/`](duabusiness/Shared/Adapters/) |
+| **Decorator** | `LoggingRepositoryDecorator<T>` wraps every repository to add structured logging without modifying domain code | [`duabusiness/Shared/Repositories/LoggingRepositoryDecorator.cs`](duabusiness/Shared/Repositories/LoggingRepositoryDecorator.cs) |
+| **Singleton** | `Settings`, `Logger`, `ExceptionHandler` are registered as `AddSingleton` in the DI container | [`duabusiness/Shared/Settings/Settings.cs`](duabusiness/Shared/Settings/Settings.cs) |
+| **Options pattern** | `IOptions<T>` binds each bounded context's configuration section from `appsettings.json` / Key Vault | Applied per bounded context in `Program.cs` |
+| **Middleware pipeline** | `RoleEnforcementMiddleware`, `CorrelationIdMiddleware`, `GlobalExceptionHandlerMiddleware` are composed in order in `Program.cs` | [`duabusiness/Shared/Middleware/`](duabusiness/Shared/Middleware/) |
+
+---
+
+## [`/duabusiness` Project Scaffold](duabusiness/)
+
+```
+duabusiness/
+├── Program.cs                          → App entry point: DI registration, middleware pipeline, OpenAPI setup
+├── appsettings.json                    → Non-sensitive config (logging levels, feature flags)
+├── appsettings.Development.json        → Dev overrides (local SQL, mock AI service)
+├── duabusiness.csproj
+│
+├── Identity/                           → Bounded context: authentication & authorization
+│   ├── Middleware/
+│   │   └── RoleEnforcementMiddleware.cs
+│   ├── Authorization/
+│   │   ├── PermissionDefinitions.cs    → Role → PermissionCode[] map
+│   │   ├── PermissionAuthorizationHandler.cs
+│   │   └── RequirePermissionAttribute.cs
+│   └── Services/
+│       └── TokenValidationService.cs
+│
+├── DocumentIngestion/                  → Bounded context: file upload & parsing
+│   ├── Controllers/
+│   │   └── FileController.cs           → POST /api/v1/files/upload, GET /api/v1/files/{batchId}
+│   ├── Services/
+│   │   ├── FileUploadService.cs        → Streams files to Azure Blob Storage
+│   │   └── FileValidationService.cs    → Extension, size, MIME type checks
+│   ├── Strategies/
+│   │   ├── IDocumentParserStrategy.cs
+│   │   ├── WordParserStrategy.cs
+│   │   ├── ExcelParserStrategy.cs
+│   │   ├── PdfParserStrategy.cs
+│   │   └── ImageParserStrategy.cs
+│   ├── Factories/
+│   │   └── DocumentParserFactory.cs
+│   ├── Models/
+│   │   ├── FileUploadBatch.cs
+│   │   └── ParsedDocument.cs
+│   └── Validators/
+│       └── FileUploadRequestValidator.cs
+│
+├── DuaGeneration/                      → Bounded context: DUA orchestration & output
+│   ├── Controllers/
+│   │   └── DuaController.cs            → POST /api/v1/dua/generate, GET /api/v1/dua/{id}, GET /api/v1/dua/{id}/download, GET /api/v1/dua, PATCH /api/v1/dua/{id}/fields, POST /api/v1/dua/{id}/approve
+│   ├── Commands/
+│   │   ├── GenerateDuaCommand.cs
+│   │   ├── GenerateDuaCommandHandler.cs
+│   │   ├── UpdateDuaFieldCommand.cs
+│   │   └── ApproveDuaCommand.cs
+│   ├── Queries/
+│   │   ├── GetDuaByIdQuery.cs
+│   │   ├── GetDuaByIdQueryHandler.cs
+│   │   └── GetDuaListQuery.cs
+│   ├── Services/
+│   │   ├── DuaOrchestrationService.cs  → Coordinates parsing → mapping → confidence → docx generation
+│   │   ├── SemanticMappingService.cs   → Maps extracted fields to official DUA field codes
+│   │   ├── ConfidenceScoreService.cs   → Assigns High / Medium / Low based on AI confidence + validation rules
+│   │   ├── DuaDocxGeneratorService.cs  → Produces the pre-filled .docx file with color-coded confidence
+│   │   ├── DuaExportService.cs         → Enforces POL-001 then generates SAS download URL from blob
+│   │   └── DuaAccessGuard.cs           → Enforces POL-002, POL-003 (owner / reviewer / admin check)
+│   ├── Models/
+│   │   ├── DuaProcess.cs               → Aggregate root: id, status, fields[], ownerId, reviewerId
+│   │   ├── DuaField.cs                 → fieldCode, value, confidence, sourceFile, requiresReview
+│   │   ├── DuaStatus.cs                → Enum: Pending, Processing, Completed, Failed, Review
+│   │   └── ConfidenceLevel.cs          → Enum: High, Medium, Low
+│   ├── Repositories/
+│   │   └── IDuaProcessRepository.cs
+│   └── Validators/
+│       ├── GenerateDuaRequestValidator.cs
+│       └── UpdateDuaFieldRequestValidator.cs
+│
+├── TemplateManagement/                 → Bounded context: DUA template CRUD
+│   ├── Controllers/
+│   │   └── TemplateController.cs       → GET /api/v1/templates, POST /api/v1/templates, PUT /api/v1/templates/{id}, DELETE /api/v1/templates/{id}
+│   ├── Services/
+│   │   └── TemplateService.cs
+│   ├── Models/
+│   │   └── DuaTemplate.cs              → id, name, version, blobPath, isActive, createdAt
+│   └── Validators/
+│       └── TemplateUpsertValidator.cs
+│
+├── UserManagement/                     → Bounded context: user and role administration
+│   ├── Controllers/
+│   │   └── UserController.cs           → GET /api/v1/users, POST /api/v1/users, PUT /api/v1/users/{id}, DELETE /api/v1/users/{id}
+│   ├── Services/
+│   │   └── UserService.cs
+│   ├── Models/
+│   │   └── AppUser.cs                  → id, entraId, email, displayName, role, createdAt
+│   └── Validators/
+│       └── UserUpsertValidator.cs
+│
+├── Observability/                      → Bounded context: logging, health checks, audit
+│   ├── Controllers/
+│   │   └── HealthController.cs         → GET /health/live, GET /health/ready
+│   ├── Services/
+│   │   └── AuditLogService.cs          → Writes immutable audit records to Azure SQL
+│   └── Models/
+│       └── AuditEvent.cs               → actorId, action, resourceId, timestamp, result
+│
+├── Shared/                             → Cross-cutting infrastructure
+│   ├── Settings/
+│   │   └── Settings.cs                 → Singleton: reads from Key Vault / env vars at startup
+│   ├── Middleware/
+│   │   ├── CorrelationIdMiddleware.cs  → Injects X-Correlation-Id header on every request/response
+│   │   ├── RequestLoggingMiddleware.cs → Logs method, path, status, duration, correlation ID
+│   │   └── GlobalExceptionHandlerMiddleware.cs → Catches unhandled exceptions, returns RFC 7807 ProblemDetails
+│   ├── Repositories/
+│   │   ├── IRepository.cs
+│   │   ├── IUnitOfWork.cs
+│   │   ├── EfRepository.cs             → Generic EF Core implementation
+│   │   └── LoggingRepositoryDecorator.cs
+│   ├── Adapters/
+│   │   ├── IDocumentIntelligenceAdapter.cs
+│   │   ├── DocumentIntelligenceAdapter.cs  → Wraps Azure AI Document Intelligence SDK
+│   │   ├── INotificationAdapter.cs
+│   │   └── NotificationHubAdapter.cs       → Wraps Azure Notification Hubs SDK
+│   ├── Persistence/
+│   │   └── DuaDbContext.cs             → EF Core DbContext: DuaProcesses, DuaFields, Users, Templates, AuditEvents
+│   └── Models/
+│       ├── ApiResponse.cs              → Generic wrapper: success, data, error
+│       └── ProblemDetails.cs           → RFC 7807 error response model
+│
+└── Tests/
+    ├── Unit/
+    │   ├── DuaGeneration/
+    │   │   ├── SemanticMappingServiceTests.cs
+    │   │   ├── ConfidenceScoreServiceTests.cs
+    │   │   └── DuaAccessGuardTests.cs
+    │   ├── DocumentIngestion/
+    │   │   └── DocumentParserFactoryTests.cs
+    │   └── Identity/
+    │       └── PermissionAuthorizationHandlerTests.cs
+    └── Integration/
+        ├── DuaControllerTests.cs
+        ├── FileControllerTests.cs
+        └── TemplateControllerTests.cs
+```
+
+---
+
+## [API Endpoints](duabusiness/)
+
+All endpoints are prefixed `/api/v1/`. All require a valid Bearer JWT unless noted otherwise.
+
+### Files
+
+| Method | Path | Permission | Description |
+|---|---|---|---|
+| `POST` | `/api/v1/files/upload` | `DOCUMENT_SCAN_START` | Initiates a streaming multipart upload; returns `batchId` |
+| `GET` | `/api/v1/files/{batchId}` | `DOCUMENT_LIST_VIEW` | Returns upload batch status and list of detected files |
+
+### DUA
+
+| Method | Path | Permission | Description |
+|---|---|---|---|
+| `POST` | `/api/v1/dua/generate` | `PROCESS_START` | Enqueues a DUA generation job; returns `202 Accepted` with `processId` |
+| `GET` | `/api/v1/dua/{id}` | `DUA_RESULT_VIEW` | Returns the DUA process state, field values, and confidence levels |
+| `GET` | `/api/v1/dua` | `HISTORY_VIEW` | Returns paginated list of DUA processes for the calling user |
+| `PATCH` | `/api/v1/dua/{id}/fields` | `DUA_RESULT_EDIT` | Updates one or more field values (enforces POL-002) |
+| `POST` | `/api/v1/dua/{id}/approve` | `DUA_RESULT_APPROVE` | Marks a DUA as approved (enforces POL-003) |
+| `GET` | `/api/v1/dua/{id}/download` | `DUA_RESULT_EXPORT` | Returns a time-limited SAS URL to download the `.docx` file (enforces POL-001) |
+
+### Templates
+
+| Method | Path | Permission | Description |
+|---|---|---|---|
+| `GET` | `/api/v1/templates` | `DUA_TEMPLATE_SELECT` | Returns all active DUA templates |
+| `POST` | `/api/v1/templates` | `SYSTEM_CONFIG` | Creates a new template (uploads `.docx` to blob) |
+| `PUT` | `/api/v1/templates/{id}` | `SYSTEM_CONFIG` | Updates template metadata or file |
+| `DELETE` | `/api/v1/templates/{id}` | `SYSTEM_CONFIG` | Soft-deletes a template (sets `isActive = false`) |
+
+### Users
+
+| Method | Path | Permission | Description |
+|---|---|---|---|
+| `GET` | `/api/v1/users` | `USER_ADMIN` | Returns all registered users |
+| `POST` | `/api/v1/users` | `USER_ADMIN` | Registers a new user and assigns a role |
+| `PUT` | `/api/v1/users/{id}` | `USER_ADMIN` | Updates user role or metadata |
+| `DELETE` | `/api/v1/users/{id}` | `USER_ADMIN` | Deactivates a user account |
+
+### Health
+
+| Method | Path | Auth Required | Description |
+|---|---|---|---|
+| `GET` | `/health/live` | No | Returns `200 OK` if the process is alive |
+| `GET` | `/health/ready` | No | Returns `200 OK` only if SQL and Blob Storage dependencies are reachable |
+
+---
+
+## [Key Backend Workflows](duabusiness/DuaGeneration/)
+
+### Upload Files to Generate DUA
+
+1. The frontend calls `POST /api/v1/files/upload` with a multipart form body containing one or more files.
+2. The `FileController` validates the request using `FileUploadRequestValidator` (extension whitelist: `.docx`, `.xlsx`, `.pdf`, `.jpg`, `.png`; max file size: 100 MB; max batch size: 500 MB).
+3. If validation fails, the controller returns `400 Bad Request` with a `ProblemDetails` body listing all validation errors.
+4. If validation passes, `FileUploadService` opens a streaming pipe and writes each file directly to **Azure Blob Storage** under the path `uploads/{userId}/{batchId}/{fileName}` — the file content never fully materialises in API server memory.
+5. For each successfully stored file, a `FileMetadata` record is written to Azure SQL via `EfRepository` within a single `IUnitOfWork` transaction (all files in the batch commit together or roll back together).
+6. The controller returns `202 Accepted` with the `batchId` and the list of detected file names and types.
+7. An `AuditEvent` (`action: FILE_BATCH_UPLOADED`) is written by `AuditLogService`.
+
+### Generate DUA
+
+1. The frontend calls `POST /api/v1/dua/generate` with `{ batchId, templateId }`.
+2. `DuaController` validates the request using `GenerateDuaRequestValidator` (both IDs must exist and belong to the calling user).
+3. `DuaOrchestrationService` creates a `DuaProcess` entity with `status = Pending` and persists it; returns `202 Accepted` with `{ processId }` to the frontend immediately.
+4. The orchestrator updates `status = Processing` and begins iterating over the files in the batch:
+   a. `DocumentParserFactory` selects the correct `IDocumentParserStrategy` based on the file MIME type.
+   b. Each strategy reads the file stream from Azure Blob Storage and calls `DocumentIntelligenceAdapter.AnalyzeAsync()`, receiving a list of `ExtractedField` objects with raw values and AI confidence scores (0.0–1.0).
+5. `SemanticMappingService` maps each `ExtractedField` to the official DUA field code (e.g., `FIELD_33_CUSTOMS_PROCEDURE`) using a rule table defined in `PermissionDefinitions.cs`. Fields not matched to any DUA code are collected as `unmappedFields` for manual review.
+6. `ConfidenceScoreService` converts each AI confidence float to `ConfidenceLevel`:
+   - `>= 0.85` → `High` (green)
+   - `0.60 – 0.84` → `Medium` (yellow)
+   - `< 0.60` → `Low` (red, `requiresReview = true`)
+7. `DuaDocxGeneratorService` loads the selected template `.docx` from Blob Storage, fills each mapped field, and applies background shading per confidence level. The generated file is uploaded to `results/{userId}/{processId}/dua.docx` in Blob Storage.
+8. `DuaProcess.status` is updated to `Completed` (or `Failed` if an unrecoverable error occurred). The `DuaField[]` array is persisted to Azure SQL.
+9. `NotificationHubAdapter.SendAsync()` pushes a status update event to the frontend callback URL registered during session setup, carrying `{ processId, status, fieldCount, reviewRequiredCount }`.
+10. An `AuditEvent` (`action: DUA_GENERATED`) is written.
+
+### Setup / Update DUA Template
+
+1. An authorised `SYS_ADMIN` calls `POST /api/v1/templates` with a multipart body containing the `.docx` template file and metadata (`name`, `version`).
+2. `TemplateController` validates the request using `TemplateUpsertValidator` (file must be `.docx`, max 20 MB, version must follow semantic versioning `X.Y.Z`).
+3. `TemplateService` streams the file to Blob Storage at `templates/{templateId}/template.docx`.
+4. A `DuaTemplate` record is inserted into Azure SQL with `isActive = true`. Any previously active template with the same `name` is soft-deleted (`isActive = false`) to preserve history.
+5. The controller returns `201 Created` with the new template's `id`, `name`, `version`, and `createdAt`.
+6. An `AuditEvent` (`action: TEMPLATE_CREATED`) is written.
+
+### Export DUA
+
+1. The frontend calls `GET /api/v1/dua/{id}/download`.
+2. `DuaController` calls `DuaExportService.GetDownloadUrlAsync(processId, callingUserId)`.
+3. `DuaExportService` enforces **POL-001**: if `DuaProcess.status != Completed` or no reviewer has approved the document, a `403 Forbidden` response is returned.
+4. `DuaAccessGuard` enforces **POL-003**: only the owner, the assigned reviewer, or a `SYS_ADMIN` may download.
+5. If all checks pass, a **Shared Access Signature (SAS) URL** with a 15-minute expiry is generated for the blob `results/{userId}/{processId}/dua.docx`.
+6. The controller returns `200 OK` with `{ downloadUrl, expiresAt }`.
+7. An `AuditEvent` (`action: DUA_EXPORTED`) is written.
+
+---
+
+## [Observability](duabusiness/Observability/)
+
+All three observability pillars are centralised in **Azure Monitor / Application Insights**.
+
+### Structured Logs
+
+- All log entries are emitted as **JSON** via `Microsoft.Extensions.Logging` + the Application Insights sink.
+- Every log entry carries a `correlationId` injected by `CorrelationIdMiddleware` from the `X-Correlation-Id` request header (or generated if absent). This ID is propagated to Azure AI Document Intelligence calls so distributed traces can be stitched together.
+- `RequestLoggingMiddleware` records: `method`, `path`, `statusCode`, `durationMs`, `userId`, `correlationId` for every inbound request.
+
+| Log Level | When Used |
+|---|---|
+| `Information` | Successful operations: file uploaded, DUA completed, user created |
+| `Warning` | Recoverable issues: field confidence below threshold, retry on transient DB error |
+| `Error` | Unrecoverable failures caught by `GlobalExceptionHandlerMiddleware` |
+| `Critical` | Key Vault unreachable at startup, database migration failure |
+
+### Metrics
+
+The following custom metrics are tracked via Application Insights `TelemetryClient.TrackMetric()`:
+
+| Metric Name | Unit | Description |
+|---|---|---|
+| `dua.generation.duration` | ms | Time from `status = Processing` to `status = Completed` |
+| `dua.fields.confidence.high` | count | Number of High-confidence fields per DUA |
+| `dua.fields.confidence.medium` | count | Number of Medium-confidence fields per DUA |
+| `dua.fields.confidence.low` | count | Number of Low-confidence (review required) fields per DUA |
+| `file.upload.size` | bytes | Total batch size per upload |
+| `api.request.duration` | ms | HTTP request latency by route (auto-collected by APIM + App Insights) |
+| `api.request.errors` | count | 4xx and 5xx responses by route |
+
+Dashboards are built in **Azure Monitor Workbooks** using these metrics. Alerts are configured for:
+- `dua.generation.duration` p95 > 180 s → PagerDuty notification to on-call team.
+- `api.request.errors` rate > 5% over 5 minutes → Email alert to `ops@duastreamliner.com`.
+
+### Distributed Traces
+
+- **OpenTelemetry** SDK is configured in `Program.cs` with the Azure Monitor exporter.
+- Every outbound call to Azure Blob Storage, Azure SQL, and Azure AI Document Intelligence is automatically instrumented.
+- Trace spans for each DUA generation step (parse, map, score, generate, notify) are manually emitted via `Activity.StartActivity()` so the end-to-end processing timeline is visible in the Application Insights **Transaction Search** view.
+
+### Health Checks
+
+| Endpoint | Check | Failure Condition |
+|---|---|---|
+| `GET /health/live` | Process is running | Always `200 OK` unless the process is crashed |
+| `GET /health/ready` | Azure SQL reachable + Blob Storage reachable | Returns `503 Service Unavailable` with detail if any dependency is down |
+
+Azure App Service **health check probe** is configured to call `/health/ready` every 30 seconds. If it fails 3 consecutive times, App Service removes the instance from the load balancer and attempts a restart.
+
+---
+
+## [Infrastructure / DevOps](duabusiness/)
+
+### CI/CD
+
+**Tool:** Azure DevOps Pipelines (YAML)
+
+| Stage | Trigger | Steps |
+|---|---|---|
+| **Build** | Every push to any branch | Restore NuGet packages → `dotnet build` → run unit tests (xUnit) → publish test results → build Docker image |
+| **Deploy to Dev** | Merge to `develop` branch | Run integration tests against Dev slot → deploy to `Azure App Service / dev` slot via `az webapp deploy` |
+| **Deploy to Stage** | Merge to `main` branch | Deploy to `Stage` App Service slot → run Playwright smoke tests → manual approval gate |
+| **Deploy to Prod** | After manual approval | Swap Stage ↔ Production slots (zero-downtime blue/green swap) |
+
+### Infrastructure as Code
+
+**Tool:** **Bicep** (Azure-native IaC)
+
+All Azure resources are declared in `infrastructure/` at the monorepo root:
+
+| File | Resources Declared |
+|---|---|
+| `infrastructure/main.bicep` | Resource group, App Service Plan, App Service (frontend + backend slots), API Management instance |
+| `infrastructure/database.bicep` | Azure SQL Server, Azure SQL Database (General Purpose, 4 vCores), firewall rules |
+| `infrastructure/storage.bicep` | Azure Blob Storage account, containers (`uploads`, `results`, `templates`), lifecycle policies |
+| `infrastructure/keyvault.bicep` | Azure Key Vault, access policies for App Service managed identity |
+| `infrastructure/monitoring.bicep` | Application Insights workspace, Log Analytics workspace, alert rules |
+| `infrastructure/notifications.bicep` | Azure Notification Hubs namespace and hub |
+
+All infrastructure changes go through the same Azure DevOps pipeline. A `bicep what-if` plan is generated and posted as a PR comment before any `bicep deploy` runs in Stage or Prod.
+
+### Environment Parity
+
+| Setting | Development | Stage | Production |
+|---|---|---|---|
+| Azure SQL tier | Basic (5 DTU) | General Purpose (2 vCores) | General Purpose (4 vCores) |
+| App Service tier | B1 | P1v3 | P2v3 (auto-scale 2–6 instances) |
+| Azure AI Document Intelligence | Free tier (500 pages/month) | S0 Standard | S0 Standard |
+| Data | Synthetic generated fixtures | Anonymised copy of prod (refreshed weekly) | Live |
+
+---
+
+## [Availability](duabusiness/)
+
+### SLA Target
+
+**99.9% uptime** — equivalent to a maximum of **8.7 hours of downtime per year**.
+
+### Single Points of Failure and Mitigations
+
+| Component | Default SLA | Mitigation |
+|---|---|---|
+| **Azure App Service** (Standard/Premium tier) | 99.95% | Two or more instances behind the built-in load balancer; auto-heal on health check failure |
+| **Azure SQL Database** (General Purpose) | 99.99% | Zone-redundant deployment; automatic failover in < 30 s; point-in-time restore up to 35 days |
+| **Azure Blob Storage** (LRS) | 99.9% read, 99.9% write | Upgraded to **ZRS** (Zone-Redundant Storage) in Production; 99.99% read SLA |
+| **Azure API Management** | 99.95% (multi-region) | Single region (same as App Service); acceptable for current scale |
+| **Azure Notification Hubs** | 99.9% | Frontend polls `/api/v1/dua/{id}` every 10 s as fallback if push notification is not received within 30 s |
+| **Azure AI Document Intelligence** | 99.9% | `DocumentIntelligenceAdapter` implements exponential-backoff retry (3 attempts, 2 s / 4 s / 8 s) for transient 429 and 503 responses |
+| **Azure Key Vault** | 99.99% | Secrets are cached in-memory at startup for 1 hour; Key Vault outage does not affect running instances |
+
+### Resilience Patterns
+
+- **Circuit Breaker**: `Polly` library wraps all outbound HTTP calls (Azure AI Document Intelligence, Notification Hubs). After 5 consecutive failures within 60 seconds, the circuit opens for 30 seconds before retrying.
+- **Timeout**: All outbound calls have an explicit timeout — 30 s for Document Intelligence, 10 s for Blob Storage operations, 5 s for Notification Hubs.
+- **Bulkhead**: Maximum 10 concurrent DUA generation pipelines per App Service instance, enforced by a `SemaphoreSlim` in `DuaOrchestrationService`. Requests beyond the limit return `429 Too Many Requests`.
+- **Graceful degradation**: If Notification Hubs is unreachable, the backend logs a warning and relies on the frontend polling fallback. The DUA generation result is still stored in SQL and Blob Storage.
+
+---
+
+## [Scalability](duabusiness/)
+
+### Expected Bottlenecks
+
+| Bottleneck | Reason | Mitigation |
+|---|---|---|
+| **DUA generation pipeline** | CPU-bound OCR + semantic mapping; each job takes 30–120 s | Azure App Service auto-scale (CPU > 70% → add instance, up to 6 instances); bulkhead limits per-instance concurrency |
+| **File upload throughput** | Large files (up to 100 MB) streamed to Blob Storage | Multipart streaming avoids API server memory saturation; Blob Storage scales horizontally without configuration |
+| **Azure SQL** | DuaField writes at end of each generation job | EF Core bulk insert for `DuaField[]`; read replicas for `GET /api/v1/dua` list queries (EF Core `UseQueryTrackingBehavior(NoTracking)`) |
+| **Azure AI Document Intelligence** | Rate limited per subscription (15 transactions per second on S0) | Per-user rate limit of 10 DUA generations/minute via APIM; circuit breaker absorbs transient 429s |
+
+### Elements That Scale When Request Volume Grows
+
+- **Azure App Service**: horizontal scale-out (add instances) triggered by CPU ≥ 70% or active request queue > 100.
+- **Azure Blob Storage**: scales automatically; no partition limit for the expected volume.
+- **Azure SQL**: vertical scale (increase vCores) or read replicas for reporting queries.
+- **Azure API Management**: request units are consumed per call; upgrade from Developer to Standard tier increases throughput limit.
+
+### Stateless Design
+
+The ASP.NET Core application is fully **stateless**. No in-memory session is stored between requests. All state (DUA process status, field values, user sessions) lives in Azure SQL or Blob Storage. This allows App Service to route any request to any instance without sticky sessions.
+
+---
+
+## [Architecture Diagrams (C4)](duabusiness/)
+
+### Context Diagram
+
+The DUA Streamliner system is used by customs specialists, reviewers, auditors, and administrators who access it through a web browser. The system processes source documents (invoices, packing lists, bills of lading) provided by the user and produces a pre-filled DUA Word document. Externally, the system delegates identity verification to **Microsoft Entra ID** and document intelligence extraction to **Azure AI Document Intelligence**. Notification delivery to the browser is handled by **Azure Notification Hubs**.
+
+```mermaid
+graph TD
+    CS[Customs Specialist] -->|Uploads docs, starts generation| DUA[DUA Streamliner]
+    CR[Customs Reviewer] -->|Reviews and approves DUA| DUA
+    AU[Auditor] -->|Read-only audit access| DUA
+    SA[SYS ADMIN] -->|System configuration| DUA
+    DUA -->|Validates identity and roles| ENTRA[Microsoft Entra ID]
+    DUA -->|Extracts fields from documents| DOCINT[Azure AI Document Intelligence]
+    DUA -->|Pushes processing status| NOTIF[Azure Notification Hubs]
+    NOTIF -->|Real-time update| CS
+```
+
+---
+
+### Container Diagram
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Azure Cloud                                                                     │
+│                                                                                  │
+│  ┌────────────────┐     HTTPS/JWT      ┌──────────────────────────────────────┐  │
+│  │  Browser       │ ─────────────────► │  Azure API Management                │  │
+│  │  React SSR     │                    │  Rate limiting, JWT edge validation, │  │
+│  │  (Node.js 21)  │                    │  OpenAPI publishing                  │  │
+│  │  Azure App     │                    └─────────────────┬────────────────────┘  │
+│  │  Service       │                                      │ HTTPS                 │
+│  └────────────────┘                                      ▼                       │
+│                                               ┌──────────────────────────────┐   │
+│                                               │  Backend API                 │   │
+│                                               │  ASP.NET Core 9 (.NET 9)     │   │
+│                                               │  Azure App Service           │   │
+│                                               │  (P2v3, auto-scale 2–6)      │   │
+│                                               └──┬──────┬──────────┬─────────┘   │
+│                                                  │      │          │             │
+│                              EF Core / TLS       │      │ SDK      │ SDK         │
+│                              ┌───────────────────┘      │          │             │
+│                              ▼                          ▼          ▼             │
+│                    ┌──────────────────┐   ┌───────────────────┐  ┌────────────┐  │
+│                    │  Azure SQL DB    │   │  Azure Blob       │  │  Azure     │  │ 
+│                    │  EF Core 9       │   │  Storage (ZRS)    │  │  Notif.    │  │
+│                    │  DuaProcesses    │   │  uploads/         │  │  Hubs      │  │
+│                    │  DuaFields       │   │  results/         │  └────────────┘  │
+│                    │  Users           │   │  templates/       │                  │
+│                    │  Templates       │   └───────────────────┘                  │
+│                    │  AuditEvents     │                                          │
+│                    └──────────────────┘                                          │
+│                                                                                  │
+│  ┌────────────────────────┐   ┌────────────────────────┐   ┌───────────────────┐ │
+│  │  Azure Key Vault       │   │  Azure Application     │   │  Azure AI         │ │
+│  │  Secrets / API keys    │   │  Insights              │   │  Document Intel.  │ │
+│  │  Connection strings    │   │  Logs / Metrics /      │   │  OCR + field      │ │
+│  └────────────────────────┘   │ Traces / Alerts        │   │  extraction       │ │
+│                               └────────────────────────┘   └───────────────────┘ │
+└──────────────────────────────────────────────────────────────────────────────────┘
+External:                                                                             
+  Microsoft Entra ID  (identity provider / JWT issuer)
+```
+
+---
+
+### Code Diagram — DuaGeneration Bounded Context
+
+```
+DuaGeneration/
+│
+├── «controller»
+│   └── DuaController
+│       uses ──► GenerateDuaCommandHandler
+│       uses ──► GetDuaByIdQueryHandler
+│       uses ──► DuaExportService
+│       uses ──► DuaAccessGuard
+│
+├── «command handler»
+│   └── GenerateDuaCommandHandler
+│       uses ──► DuaOrchestrationService
+│       uses ──► IDuaProcessRepository
+│
+├── «service»
+│   ├── DuaOrchestrationService
+│   │   uses ──► DocumentParserFactory          (DocumentIngestion context)
+│   │   uses ──► SemanticMappingService
+│   │   uses ──► ConfidenceScoreService
+│   │   uses ──► DuaDocxGeneratorService
+│   │   uses ──► INotificationAdapter           (Shared/Adapters)
+│   │   uses ──► IDuaProcessRepository
+│   │
+│   ├── SemanticMappingService
+│   │   uses ──► PermissionDefinitions          (field code table)
+│   │
+│   ├── ConfidenceScoreService
+│   │   depends on ──► ConfidenceLevel          (domain enum)
+│   │
+│   ├── DuaDocxGeneratorService
+│   │   uses ──► Azure Blob Storage             (via BlobStorageAdapter)
+│   │
+│   ├── DuaExportService
+│   │   enforces ──► POL-001 (status check)
+│   │   uses ──► BlobStorageAdapter.GenerateSasUrl()
+│   │
+│   └── DuaAccessGuard
+│       enforces ──► POL-002 (edit before approval)
+│       enforces ──► POL-003 (owner / reviewer / admin)
+│
+├── «domain model»
+│   ├── DuaProcess          (aggregate root)
+│   │   has ──► DuaField[]
+│   │   has ──► DuaStatus   (enum)
+│   │   has ──► ownerId, reviewerId
+│   │
+│   └── DuaField
+│       has ──► ConfidenceLevel (enum: High, Medium, Low)
+│       has ──► fieldCode, value, sourceFile, requiresReview
+│
+└── «repository interface»
+    └── IDuaProcessRepository
+        implemented by ──► EfRepository<DuaProcess>  (Shared/Repositories)
+```
 
 ---
 
